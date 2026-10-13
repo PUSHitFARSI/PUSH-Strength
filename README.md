@@ -21,10 +21,14 @@ It works offline after the first open.
 
 ## Using it
 
-- **Weights**: the card shows your next session with weights, warm-up sets and plates per side. Swipe right and fill in what you did (tap a set to take a rep off, pick Easy, Clean or Grind). Swipe left to skip and the session moves to the next day.
-- **Swim**: swipe right after a swim and enter distance and time. Change your goal under **Goal**.
+- **Weights**: the card shows your next session with weights, warm-up sets and plates per side.
+  - Tap **Start workout** to go set by set. Tap **Done** after each set and a rest timer counts down, then beeps when it's time for the next set (with the ringer on). If you got fewer reps, change the number before tapping Done, or fix it during the rest. After the last set of a lift, pick Easy, Clean or Grind. At the end, tap **Save session**.
+  - Or swipe right on the card to log a session after the fact. Swipe left to skip it and the session moves to the next day.
+- **Progress charts**: tap any chart to open it full screen with a table of every entry. Tap a point or a row to see that day. Turn your phone sideways to see the table next to the chart.
+- **Mornings**: swipe right after your 5:30 run and bag work to check it off. Swipe left to skip. Your days off (Friday and Saturday) don't break your streak. Tap a day in the calendar to fix one you forgot, and tap the grid to see every week and month.
+- **Swim**: swipe right after a swim and enter distance and time. Change your goal under **Goal**. Under **Technique**, tap any step or tip for the details, common mistakes and a drill. Tap **Make it my next swim's focus** to put that drill on your next swim card.
 - **Basketball**: swipe right to check off the game. Tap any day in the calendar to add or remove one.
-- **Settings** (gear icon): change lift, swim and game days, copy a backup, or restore one.
+- **Settings** (gear icon): change lift, morning, swim and game days, set rest times, turn the beep on or off, copy a backup, or restore one.
 
 ## Your data
 
@@ -32,7 +36,7 @@ Everything you log stays on your phone. Nothing is sent anywhere. Copy a backup 
 
 ## Updating
 
-To update the app later, upload the new `index.html` to the same repository (it replaces the old one), wait a minute, then open the app once while online.
+To update the app later, upload all the files from the new zip to the same repository so they replace the old ones. Wait a minute, then open the app once while online. Your log stays on your phone and is not affected.
 
 ## Files
 
