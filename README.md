@@ -21,14 +21,17 @@ It works offline after the first open.
 
 ## Using it
 
+- **Week**: what you've done this week across lifting, mornings, swim and basketball, day by day, with the weeks before it underneath. Tap a row to go to that tab.
 - **Weights**: the card shows your next session with weights, warm-up sets and plates per side.
   - Tap **Start workout** to go set by set. Tap **Done** after each set and a rest timer counts down, then beeps when it's time for the next set (with the ringer on). If you got fewer reps, change the number before tapping Done, or fix it during the rest. After the last set of a lift, pick Easy, Clean or Grind. At the end, tap **Save session**.
   - Or swipe right on the card to log a session after the fact. Swipe left to skip it and the session moves to the next day.
-- **Progress charts**: tap any chart to open it full screen with a table of every entry. Tap a point or a row to see that day. Turn your phone sideways to see the table next to the chart.
+- **Strength level**: on the Weights tab, see how your lifts compare with other lifters at your body weight (from strengthlevel.com), from Beginner to Elite. Tap a lift for the full table and what the next level takes in training.
+- **Progress charts**: on the Weights tab, tap a lift to open its chart full screen with a table of every entry. On the other tabs, tap the chart. It stays put until you tap **X**. Tap a point or a row to see that day. Turn your phone sideways to see the table next to the chart.
+  - The shaded bands behind the line are the levels, Beginner to Elite. On the lift charts they're shown as the weight for a set of 5 at your body weight, so you can see how close the next level is. The pull-ups chart shows your best set each session, and the swim chart shades the 1 km levels.
 - **Mornings**: swipe right after your 5:30 session, check the run distance and time (filled in from last time) and whether you did the punching bag, then tap **Save morning**. Swipe left to skip. Your days off (Friday and Saturday) don't break your streak. Tap a day in the calendar to log or edit it. Tap the grid to see every week and month, and the run chart to see every run.
-- **Swim**: swipe right after a swim and enter distance and time. Change your goal under **Goal**. Under **Technique**, tap any step or tip for the details, common mistakes and a drill. Tap **Make it my next swim's focus** to put that drill on your next swim card.
+- **Swim**: swipe right after a swim and enter distance and time. Change your goal under **Goal**. **Level** compares your 1 km time with other swimmers (from swimminglevel.com, adjusted for breaststroke). Under **Technique**, tap any step or tip for the details, common mistakes and a drill. Tap **Make it my next swim's focus** to put that drill on your next swim card.
 - **Basketball**: swipe right to check off the game. Tap any day in the calendar to add or remove one.
-- **Settings** (gear icon): change lift, morning, swim and game days, set rest times, turn the beep on or off, copy a backup, or restore one.
+- **Settings** (gear icon): set your body weight and age for the levels, change lift, morning, swim and game days, set rest times, turn the beep on or off, copy a backup, or restore one.
 
 ## Your data
 

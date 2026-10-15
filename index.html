@@ -62,6 +62,8 @@ body {
   overflow-x: hidden;
 }
 html.locked, html.locked body { overflow: hidden; }
+/* the full-screen chart holds the page exactly where it was (top is set from script) */
+html.locked body.pinned { position: fixed; left: 0; right: 0; width: 100%; }
 img { max-width: 100%; }
 [hidden] { display: none !important; }
 button {
@@ -107,7 +109,7 @@ main {
 }
 .tabbar-in {
   max-width: 520px; margin: 0 auto; height: var(--tab-h);
-  display: grid; grid-template-columns: repeat(4, 1fr);
+  display: grid; grid-template-columns: repeat(5, 1fr);
 }
 .tab {
   position: relative; display: grid; justify-items: center; align-content: center; gap: 3px;
@@ -234,7 +236,11 @@ p { margin: 0; }
   text-align: left; border: 1px solid var(--line); border-radius: 14px; background: var(--surface);
   padding: 12px 12px 10px; display: grid; gap: 8px; min-width: 0;
 }
-.tile[aria-pressed="true"] { border-color: var(--ink); background: var(--raised); }
+.tile { position: relative; transition: background-color 0.15s; }
+.tile:active { background: var(--raised); }
+.t-open { position: absolute; top: 11px; right: 11px; display: grid; color: var(--ink-3); }
+.t-open svg { width: 14px; height: 14px; }
+.tile .t-name { padding-right: 20px; }
 .tile.wide { grid-column: 1 / -1; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); align-items: center; column-gap: 16px; }
 .t-txt { display: grid; gap: 2px; min-width: 0; }
 .t-name { font-size: 11.5px; font-weight: 800; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ink-2); }
@@ -247,7 +253,6 @@ p { margin: 0; }
   position: absolute; width: 7px; height: 7px; border-radius: 50%; background: var(--ink);
   transform: translate(-50%, -50%); box-shadow: 0 0 0 2px var(--surface);
 }
-.tile[aria-pressed="true"] .spark i { box-shadow: 0 0 0 2px var(--raised); }
 
 .chart-head { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 8px; }
 .ch-txt { flex: 1; min-width: 0; display: grid; gap: 5px; }
@@ -274,7 +279,7 @@ p { margin: 0; }
 .c-ref-label { fill: var(--ink-2); font: 600 10.5px var(--body); }
 .c-fc { fill: none; stroke: var(--ink-2); stroke-width: 1.5; stroke-dasharray: 3 4; }
 .c-fc-dot { fill: var(--surface); stroke: var(--ink-2); stroke-width: 2; stroke-dasharray: 2.5 2; }
-.c-label { fill: var(--ink); font: 700 11px var(--body); }
+.c-label { fill: var(--ink); font: 700 11px var(--body); paint-order: stroke; stroke: var(--surface); stroke-width: 3px; stroke-linejoin: round; }
 .c-label.dim { fill: var(--ink-2); font-weight: 600; }
 .c-axis.big { font-size: 12px; }
 .c-label.big { font-size: 14px; }
@@ -285,6 +290,16 @@ p { margin: 0; }
 .c-sel { stroke: var(--ink-3); stroke-width: 1; }
 .c-cross { stroke: var(--ink-3); stroke-width: 1; opacity: 0; }
 .c-empty { fill: var(--ink-3); font: 13px var(--body); }
+/* level bands: lighter as the level rises */
+.c-band { fill: var(--ink); }
+.c-band.l0 { opacity: 0.04; }
+.c-band.l1 { opacity: 0.085; }
+.c-band.l2 { opacity: 0.13; }
+.c-band.l3 { opacity: 0.175; }
+.c-band.l4 { opacity: 0.22; }
+.c-band-edge { stroke: var(--ink-3); stroke-width: 1; opacity: 0.6; }
+.c-band-label { fill: var(--ink-2); font: 800 9.5px var(--body); letter-spacing: 0.08em; opacity: 0.8; }
+.c-band-label.big { font-size: 10.5px; }
 .tip {
   position: absolute; top: 0; left: 0; z-index: 2; pointer-events: none;
   background: var(--ink); color: var(--bg); border-radius: 9px; padding: 6px 9px;
@@ -529,6 +544,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
   touch-action: none; cursor: crosshair; border-radius: 10px;
 }
 .v-chart svg { position: absolute; inset: 0; display: block; overflow: visible; }
+.v-legend { margin: 0 6px; gap: 4px 14px; font-size: 11.5px; }
 .v-readout {
   flex: none; box-sizing: border-box; margin: 0 4px;
   background: var(--raised); border-radius: 14px; padding: 10px 14px 11px;
@@ -637,6 +653,103 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
 .tip-drill p { font-size: 15px; line-height: 1.5; color: var(--ink-2); }
 .tip-drill .btn { margin-top: 4px; }
 .sheet-foot .btn { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+
+
+/* ---------- levels ---------- */
+.lv-panel { padding-top: 12px; padding-bottom: 12px; }
+.lv-scale { position: relative; height: 15px; margin-bottom: 2px; }
+.lv-scale span { position: absolute; top: 0; transform: translateX(-50%); font-size: 10.5px; font-weight: 800; letter-spacing: 0.04em; color: var(--ink-3); }
+.lv-scale span:last-child { transform: translateX(-100%); }
+.lv-row { width: 100%; text-align: left; display: grid; gap: 7px; padding: 12px 0 11px; border-top: 1px solid var(--line); }
+.lv-scale + .lv-row { border-top: 0; padding-top: 6px; }
+.lv-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.lv-name { font-size: 13px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
+.lv-pill {
+  flex: none; padding: 2px 10px; border-radius: 999px; border: 1.5px solid var(--ink);
+  font-size: 12px; font-weight: 800; white-space: nowrap;
+}
+.lv-pill.none { border-color: var(--line-2); color: var(--ink-3); }
+.lv-pill.big { padding: 5px 14px; font: 22px/1 var(--display); letter-spacing: 0.04em; text-transform: uppercase; }
+.lv-bar { position: relative; display: block; height: 10px; border-radius: 999px; background: var(--raised); overflow: hidden; }
+.lv-bar i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 999px; background: var(--ink); }
+.lv-bar b { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: var(--surface); }
+.lv-sub { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 13px; color: var(--ink-3); }
+.lv-sub b { color: var(--ink); }
+.lv-key { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); font-size: 11.5px; color: var(--ink-3); }
+.lv-hero { display: grid; justify-items: start; gap: 8px; }
+.lv-hero p { font-size: 15px; color: var(--ink-2); }
+.lv-big .lv-bar { height: 12px; }
+.lv-big .lv-bar b { background: var(--surface); }
+.lv-big .lv-key { border-top: 0; padding-top: 0; margin-top: 8px; }
+.lv-table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; }
+.lv-table th { position: static; white-space: nowrap; }
+.lv-table th:first-child, .lv-table td:first-child { padding-left: 12px; }
+.lv-table th:last-child, .lv-table td:last-child { padding-right: 12px; }
+.lv-table tbody tr:last-child td { border-bottom: 0; }
+.lv-src { margin-top: 14px; }
+.lv-src + p { margin-top: 10px; }
+.stepper input:placeholder-shown + .unit { visibility: hidden; }
+.stepper input::placeholder { color: var(--ink-3); font-weight: 600; font-size: 15px; }
+.lv-src a { color: var(--ink); font-weight: 700; text-underline-offset: 3px; text-decoration-color: var(--ink-4); }
+.rest-row .small { font-weight: 400; margin-left: 4px; }
+
+
+/* ---------- the week at a glance ---------- */
+.wk-panel { display: grid; gap: 14px; padding-bottom: 4px; }
+.wk-top { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.wk-big { font: 54px/0.9 var(--display); letter-spacing: 0.01em; }
+.wk-big small { font-size: 27px; color: var(--ink-3); margin-left: 3px; }
+.wk-cap { font-size: 14px; color: var(--ink-2); }
+.wk-bar { height: 8px; border-radius: 999px; background: var(--raised); overflow: hidden; }
+.wk-bar i { display: block; height: 100%; border-radius: 999px; background: var(--ink); }
+.wk-rows { display: grid; margin: 0 -6px; }
+.wk-row {
+  width: 100%; text-align: left; display: grid; grid-template-columns: 30px minmax(0, 1fr) auto 46px;
+  align-items: center; column-gap: 12px; padding: 12px 6px; border-top: 1px solid var(--line); border-radius: 10px;
+}
+.wk-row:active { background: var(--raised); }
+.wk-ic { display: grid; place-items: center; color: var(--ink-2); }
+.wk-txt { display: grid; gap: 2px; min-width: 0; }
+.wk-name { font-size: 15px; font-weight: 700; }
+.wk-sub { font-size: 12.5px; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wk-pips { display: flex; gap: 4px; }
+.wk-pips i { width: 9px; height: 9px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--line-2); }
+.wk-pips i.on { background: var(--ink); box-shadow: none; }
+.wk-count { font: 25px/1 var(--display); text-align: right; color: var(--ink-2); }
+.wk-count small { font-size: 15px; color: var(--ink-3); margin-left: 1px; }
+.wk-count.full { color: var(--ink); }
+
+.wk-days { padding: 12px 12px 14px; }
+.wk-grid { display: grid; grid-template-columns: 28px repeat(7, minmax(0, 1fr)); align-items: stretch; }
+.wk-dh { display: grid; justify-items: center; gap: 1px; padding: 7px 0 6px; font-size: 11px; font-weight: 700; color: var(--ink-3); border-radius: 10px 10px 0 0; }
+.wk-dh b { font-size: 14px; color: var(--ink-2); }
+.wk-dh.now { background: var(--raised); color: var(--ink); }
+.wk-dh.now b { color: var(--ink); }
+.wk-rl { display: grid; place-items: center; height: 40px; color: var(--ink-3); }
+.wk-c { display: grid; place-items: center; height: 40px; }
+.wk-c.now { background: var(--raised); }
+.wk-c.now.end { border-radius: 0 0 10px 10px; }
+.wk-c::before { content: ""; box-sizing: border-box; width: 14px; height: 14px; border-radius: 50%; }
+.wk-c.s-done::before { background: var(--ink); }
+.wk-c.s-today::before { border: 2px solid var(--ink); }
+.wk-c.s-planned::before { border: 1.5px dashed var(--ink-3); }
+.wk-c.s-missed::before { width: 10px; height: 2px; border-radius: 1px; background: var(--ink-4); }
+.wk-c.s-skipped::before {
+  width: 12px; height: 12px; border-radius: 0;
+  background: linear-gradient(45deg, transparent 44%, var(--ink-3) 44%, var(--ink-3) 56%, transparent 56%),
+              linear-gradient(-45deg, transparent 44%, var(--ink-3) 44%, var(--ink-3) 56%, transparent 56%);
+}
+.wk-legend { margin-top: 12px; gap: 6px 14px; }
+.wk-legend .wk-c { height: 14px; width: 14px; }
+.wk-past { padding: 0; overflow: hidden; }
+.wk-table th svg { vertical-align: -3px; color: var(--ink-3); }
+.wk-table td.full { color: var(--ink); font-weight: 700; }
+.wk-table td.part { color: var(--ink-2); }
+.wk-table td.zero { color: var(--ink-3); }
+.wk-table td.none { color: var(--ink-4); }
+.wk-table td.tot { font-weight: 700; color: var(--ink-2); }
+.wk-table td.tot.full { color: var(--ink); }
+.wk-table tbody tr:last-child td { border-bottom: 0; }
 
 /* ---------- mornings: long-term grid ---------- */
 .hm-wrap { cursor: zoom-in; border-radius: 8px; padding: 2px 0; }
@@ -816,6 +929,11 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
 
   <nav class="tabbar" aria-label="Sections">
     <div class="tabbar-in">
+      <button class="tab" type="button" data-tab="week">
+        <span class="due-dot" hidden></span>
+        <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4M7.5 15h1.5M11.25 15h1.5M15 15h1.5"/></svg>
+        <span>Week</span>
+      </button>
       <button class="tab" type="button" data-tab="weights">
         <span class="due-dot" hidden></span>
         <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M2.5 10v4M5.5 6.5v11M8.5 8.5v7M15.5 8.5v7M18.5 6.5v11M21.5 10v4M8.5 12h7"/></svg>
@@ -1303,6 +1421,89 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     return cols;
   }
 
+  /* ---------- benchmarks ----------
+     Strength: strengthlevel.com male standards (one-rep max, kg) by body weight.
+     Levels beat 5, 20, 50, 80 and 95% of lifters. */
+  const LEVELS = ['Beginner', 'Novice', 'Intermediate', 'Advanced', 'Elite'];
+  const LEVEL_PCT = [5, 20, 50, 80, 95];
+  const STRENGTH_STD = {
+    bw: [60, 65, 70, 75, 80, 85, 90],
+    squat: [[49, 71, 98, 129, 162], [56, 79, 107, 139, 174], [62, 86, 116, 149, 185], [69, 94, 124, 159, 196], [75, 101, 132, 168, 206], [81, 108, 140, 177, 216], [87, 115, 148, 186, 226]],
+    bench: [[37, 53, 72, 95, 119], [42, 59, 79, 102, 128], [47, 64, 85, 110, 136], [51, 70, 92, 117, 144], [56, 75, 98, 124, 151], [60, 80, 104, 130, 158], [65, 85, 109, 137, 165]],
+    deadlift: [[61, 86, 117, 153, 191], [68, 95, 127, 164, 204], [75, 103, 137, 175, 216], [82, 111, 146, 186, 228], [89, 119, 155, 196, 239], [96, 127, 164, 205, 250], [102, 134, 172, 215, 260]],
+    ohp: [[21, 32, 45, 62, 79], [24, 35, 50, 67, 85], [27, 39, 54, 72, 90], [30, 43, 58, 76, 96], [33, 46, 62, 81, 101], [36, 49, 66, 85, 106], [38, 53, 70, 90, 111]],
+  };
+  /* Pull-ups: max reps in one set, by body weight (published in lb, converted to kg). */
+  const PULL_STD = {
+    bw: [130, 140, 150, 160, 170, 180, 190, 200].map((lb) => lb * 0.45359237),
+    rows: [[0, 7, 14, 23, 33], [0, 7, 14, 23, 32], [0, 7, 14, 22, 31], [0, 7, 14, 22, 30], [0, 7, 13, 21, 29], [1, 7, 13, 21, 28], [1, 7, 13, 20, 28], [1, 7, 12, 19, 27]],
+  };
+  /* Swimming: swimminglevel.com male 1000 m times (seconds) by age. Not split by stroke. */
+  const SWIM_STD = {
+    age: [20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70],
+    rows: [[1833, 1461, 1152, 908, 724], [1833, 1461, 1152, 908, 724], [1835, 1462, 1153, 909, 725], [1864, 1486, 1172, 924, 736],
+      [1929, 1538, 1212, 956, 762], [2002, 1595, 1258, 992, 791], [2080, 1658, 1307, 1031, 822], [2165, 1725, 1361, 1073, 855],
+      [2257, 1799, 1418, 1118, 891], [2357, 1879, 1481, 1168, 931], [2475, 1973, 1556, 1227, 978]],
+  };
+  /* Breaststroke is about 22% slower than freestyle (men's 100 m and 200 m world records). */
+  const BREAST_FACTOR = 1.22;
+  /* Share of a one-rep max you can lift for a given number of reps (strengthlevel.com table). */
+  const REP_PCT = { 1: 1, 2: 0.97, 3: 0.94, 4: 0.92, 5: 0.89, 6: 0.86, 7: 0.84, 8: 0.81, 9: 0.78, 10: 0.75 };
+
+  function interpRow(xs, rows, x) {
+    let i = 0;
+    while (i < xs.length - 2 && x > xs[i + 1]) i++;
+    const f = (x - xs[i]) / (xs[i + 1] - xs[i]);
+    return rows[i].map((v, k) => v + (rows[i + 1][k] - v) * f);
+  }
+  /* Thresholds for Beginner..Elite at a body weight (kg for lifts, reps for pull-ups). */
+  function strengthStandards(key, bw) {
+    const b = Math.max(50, Math.min(110, bw || 72));
+    if (key === 'pull') return interpRow(PULL_STD.bw, PULL_STD.rows, b).map((v) => Math.max(0, Math.round(v)));
+    return interpRow(STRENGTH_STD.bw, STRENGTH_STD[key], b);
+  }
+  /* 1 km breaststroke times (seconds) for Beginner..Elite at an age (20 to 30 if not set). */
+  function swimStandards(age) {
+    const a = Math.max(20, Math.min(70, age || 25));
+    return interpRow(SWIM_STD.age, SWIM_STD.rows, a).map((v) => v * BREAST_FACTOR);
+  }
+  const est1RM = (w, reps) => w / REP_PCT[Math.max(1, Math.min(10, Math.round(reps)))];
+  /* Best estimated one-rep max from any logged set. */
+  function bestMax(state, key) {
+    let best = null;
+    liftHistory(state, key).forEach((e) => {
+      const it = e.lifts[key];
+      it.reps.forEach((r) => {
+        if (r > 0) {
+          const m = est1RM(it.w, r);
+          if (!best || m > best.max + 1e-9) best = { max: m, w: it.w, reps: r, date: e.date };
+        }
+      });
+    });
+    return best;
+  }
+  /* Most pull-ups in one set. */
+  function bestPull(state) {
+    let best = null;
+    pullHistory(state).forEach((e) => {
+      const r = Math.max(...e.pull.reps);
+      if (!best || r > best.reps) best = { reps: r, date: e.date };
+    });
+    return best;
+  }
+  /* Highest level reached (-1 = below Beginner) and a 0..5 position for a level bar. */
+  function levelOf(v, std, lowerIsBetter) {
+    const reached = (s) => (lowerIsBetter ? v <= s : v >= s);
+    let idx = -1;
+    std.forEach((s, i) => { if (reached(s)) idx = i; });
+    const c01 = (x) => Math.max(0, Math.min(1, x));
+    let pos;
+    if (idx === 4) pos = 5;
+    else if (idx === -1) pos = lowerIsBetter ? c01((std[0] * 1.5 - v) / (std[0] * 0.5)) : c01(v / std[0]);
+    else pos = idx + 1 + c01((v - std[idx]) / (std[idx + 1] - std[idx]));
+    return { idx, pos };
+  }
+
   /* ---------- basketball ---------- */
   function ballStats(state, t) {
     const played = state.ball.filter((e) => e.status === 'done').map((e) => e.date);
@@ -1316,6 +1517,55 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
       year: played.filter((d) => d.slice(0, 4) === t.slice(0, 4)).length,
       streak,
     };
+  }
+
+  /* ---------- the week at a glance ----------
+     Weeks start on the same day as the mornings grid (Sunday for a Sunday to
+     Thursday plan). Each activity counts what was done against what was planned,
+     from the first week it was tracked. Days: done, skipped, today, planned
+     (still to come), missed (a planned day that passed with nothing logged). */
+  const WEEK_KINDS = ['lift', 'morning', 'swim', 'ball'];
+  function weekKind(state, kind, t) {
+    const s = state.settings;
+    const first = (list) => (list || []).reduce((a, e) => (a == null || e.date < a ? e.date : a), null);
+    if (kind === 'lift') return { list: state.lifts, days: s.liftDays, start: first(state.lifts) };
+    if (kind === 'morning') return { list: state.mornings || [], days: mDays(s), start: morningStart(state, t), fromStart: true };
+    if (kind === 'swim') return { list: state.swims, days: [s.swimDay], start: first(state.swims) };
+    return { list: state.ball, days: [s.ballDay], start: first(state.ball) };
+  }
+  function weekView(state, ws, t) {
+    const we = addDays(ws, 6);
+    const open = we >= t;                      // this week or a later one
+    const out = { start: ws, end: we, current: ws <= t && t <= we, kinds: {}, done: 0, planned: 0 };
+    WEEK_KINDS.forEach((kind) => {
+      const k = weekKind(state, kind, t);
+      const tracked = open || (k.start != null && k.start <= we);
+      const from = k.fromStart && k.start > ws ? k.start : ws;
+      const ents = k.list.filter((e) => e.date >= ws && e.date <= we);
+      const by = {};
+      ents.forEach((e) => { if (by[e.date] !== 'done') by[e.date] = e.status; });
+      let planned = 0;
+      const days = [];
+      for (let i = 0; i < 7; i++) {
+        const d = addDays(ws, i);
+        const plan = tracked && d >= from && k.days.includes(dow(d));
+        if (plan) planned++;
+        let st = '';
+        if (by[d] === 'done') st = 'done';
+        else if (by[d] === 'skipped') st = 'skipped';
+        else if (plan) st = d > t ? 'planned' : d === t ? 'today' : 'missed';
+        days.push({ d, st });
+      }
+      const done = ents.filter((e) => e.status === 'done').length;
+      out.kinds[kind] = { tracked, planned, done, skipped: ents.filter((e) => e.status === 'skipped').length, days };
+      if (tracked) { out.done += Math.min(done, planned); out.planned += planned; }
+    });
+    return out;
+  }
+  /* This week first, then the weeks before it. */
+  function weekList(state, t, n) {
+    const ws = morningWeekStart(state.settings, t);
+    return Array.from({ length: n }, (_, i) => weekView(state, addDays(ws, -7 * i), t));
   }
 
   /* ---------- seed: everything logged in our chat ---------- */
@@ -1333,6 +1583,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
         swimBase: { dist: 1000, time: 1500 }, since: '2026-10-11', tipOff: null,
         rest: { work: 150, pull: 120, warm: 60 }, sound: true,
         morningDays: [0, 1, 2, 3, 4], morningSince: null,
+        bodyWeight: 72, age: null,
       },
       lifts: [
         L('2026-08-17', 'A', { squat: x(65, [5, 5, 5], 'clean'), bench: x(55, [5, 5, 5], 'clean') }, [4, 3, 3], 'First session'),
@@ -1362,8 +1613,9 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     liftHistory, liftPlan, pullHistory, pullPlan,
     isLiftDay, slotType, nextLift, liftNotes, nextWeekly, liftDayTip,
     SWIM_GOALS, DRILLS, swimPace, swimsDone, swimPlan, swimProgress,
+    LEVELS, LEVEL_PCT, REP_PCT, BREAST_FACTOR, strengthStandards, swimStandards, est1RM, bestMax, bestPull, levelOf,
     isMorningDay, morningWeekStart, morningDue, morningRuns, runPace, morningStats, morningMonths, morningWeekdays, morningGrid,
-    ballStats, seed,
+    ballStats, WEEK_KINDS, weekView, weekList, seed,
   };
 })(typeof window !== 'undefined' ? window : globalThis);
 
@@ -1653,7 +1905,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     clean: { label: 'Clean', desc: 'Good form on every rep, even if it was hard.' },
     grind: { label: 'Grind', desc: 'The last reps were a fight. Next time repeats the weight.' },
   };
-  const TITLES = { weights: 'Weights', mornings: 'Mornings', swim: 'Swim', ball: 'Basketball' };
+  const TITLES = { week: 'This week', weights: 'Weights', mornings: 'Mornings', swim: 'Swim', ball: 'Basketball' };
   const TIPS = window.PS_TIPS || [];
   const TIP = {};
   TIPS.forEach((x) => { TIP[x.id] = x; });
@@ -1679,6 +1931,8 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     s.settings.swimBase = Object.assign({}, base.settings.swimBase, s.settings.swimBase || {});
     s.settings.rest = Object.assign({}, base.settings.rest, s.settings.rest || {});
     if (typeof s.settings.sound !== 'boolean') s.settings.sound = true;
+    if (!(s.settings.bodyWeight > 0)) s.settings.bodyWeight = 72;
+    if (!(s.settings.age > 0)) s.settings.age = null;
     s.lifts = Array.isArray(s.lifts) ? s.lifts : [];
     s.swims = Array.isArray(s.swims) ? s.swims : [];
     s.ball = Array.isArray(s.ball) ? s.ball : [];
@@ -1709,7 +1963,6 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
 
   let state = load();
   save();
-  let liftSel = 'squat';
   let showAllLifts = false;
   let showAllSwims = false;
   let calMonth = T().slice(0, 7);
@@ -1724,6 +1977,57 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     try { appEl.inert = on; } catch (e) { /* ignore */ }
     if (on) appEl.setAttribute('aria-hidden', 'true'); else appEl.removeAttribute('aria-hidden');
   }
+
+  /* While a sheet, chart or workout is open, the page behind it stays still.
+     iOS ignores overflow:hidden for touch scrolling, so drags that would move the
+     page are cancelled, and the full-screen chart also pins the page in place. */
+  const locks = new Set();
+  let lockY = 0;
+  function lockScroll(owner, pin) {
+    if (!locks.size) lockY = window.scrollY || window.pageYOffset || 0;
+    locks.add(owner);
+    document.documentElement.classList.add('locked');
+    if (pin && !document.body.classList.contains('pinned')) {
+      document.body.style.top = `${-lockY}px`;
+      document.body.classList.add('pinned');
+    }
+  }
+  function unlockScroll(owner) {
+    locks.delete(owner);
+    if (locks.size) return;
+    document.documentElement.classList.remove('locked');
+    if (document.body.classList.contains('pinned')) {
+      document.body.classList.remove('pinned');
+      document.body.style.top = '';
+      window.scrollTo(0, lockY);
+    }
+  }
+  /* Can el scroll further in the direction the finger is moving? */
+  function scrollsToward(el, dx, dy) {
+    const cs = getComputedStyle(el);
+    if (Math.abs(dy) >= Math.abs(dx)) {
+      if (!/auto|scroll/.test(cs.overflowY) || el.scrollHeight - el.clientHeight < 2) return false;
+      return dy > 0 ? el.scrollTop > 0 : el.scrollTop + el.clientHeight < el.scrollHeight - 1;
+    }
+    if (!/auto|scroll/.test(cs.overflowX) || el.scrollWidth - el.clientWidth < 2) return false;
+    return dx > 0 ? el.scrollLeft > 0 : el.scrollLeft + el.clientWidth < el.scrollWidth - 1;
+  }
+  let touchAt = null;
+  document.addEventListener('touchstart', (e) => {
+    touchAt = e.touches.length === 1 ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : null;
+  }, { passive: true });
+  document.addEventListener('touchmove', (e) => {
+    if (!locks.size || !touchAt || e.touches.length !== 1) return;
+    const p = e.touches[0];
+    const dx = p.clientX - touchAt.x, dy = p.clientY - touchAt.y;
+    touchAt = { x: p.clientX, y: p.clientY };
+    if (!dx && !dy) return;
+    for (let el = e.target && e.target.nodeType === 1 ? e.target : e.target && e.target.parentElement; el && el !== document.body && el !== document.documentElement; el = el.parentElement) {
+      if (el.matches('input, textarea, select, [contenteditable="true"]')) return;
+      if (scrollsToward(el, dx, dy)) return;
+    }
+    if (e.cancelable) e.preventDefault();
+  }, { passive: false });
 
   /* ---------- helpers ---------- */
   function whenLabel(due, t) {
@@ -1787,7 +2091,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
       $('.due-dot', b).hidden = !due[b.dataset.tab];
       b.setAttribute('aria-label', TITLES[b.dataset.tab] + (due[b.dataset.tab] ? ', due' : ''));
     });
-    main.innerHTML = tab === 'weights' ? viewWeights(t) : tab === 'mornings' ? viewMornings(t) : tab === 'swim' ? viewSwim(t) : viewBall(t);
+    main.innerHTML = tab === 'week' ? viewWeek(t) : tab === 'weights' ? viewWeights(t) : tab === 'mornings' ? viewMornings(t) : tab === 'swim' ? viewSwim(t) : viewBall(t);
     const sw = $('.swipe', main);
     swipeCtl = sw ? attachSwipe(sw, HANDLERS[tab]) : null;
     $$('.chart-wrap', main).forEach(bindChart);
@@ -1897,6 +2201,114 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
   };
 
   /* ---------- weights ---------- */
+  /* ---------- the week at a glance ---------- */
+  const KIND = {
+    lift: { tab: 'weights', name: 'Strength', d: '<path d="M2.5 10v4M5.5 6.5v11M8.5 8.5v7M15.5 8.5v7M18.5 6.5v11M21.5 10v4M8.5 12h7"/>' },
+    morning: { tab: 'mornings', name: 'Mornings', d: '<path d="M2.5 18.5h19M6.5 18.5a5.5 5.5 0 0 1 11 0M12 6.5v3M5.4 10.9l2.1 2.1M18.6 10.9l-2.1 2.1"/>' },
+    swim: { tab: 'swim', name: 'Swim', d: '<path d="M2 9.5c1.7 0 1.7-1.5 3.3-1.5s1.7 1.5 3.4 1.5 1.6-1.5 3.3-1.5 1.7 1.5 3.3 1.5 1.7-1.5 3.4-1.5S20.3 9.5 22 9.5"/><path d="M2 15.5c1.7 0 1.7-1.5 3.3-1.5s1.7 1.5 3.4 1.5 1.6-1.5 3.3-1.5 1.7 1.5 3.3 1.5 1.7-1.5 3.4-1.5 1.6 1.5 3.3 1.5"/>' },
+    ball: { tab: 'ball', name: 'Basketball', d: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3v18M6 5.2c3.4 3.2 3.4 10.4 0 13.6M18 5.2c-3.4 3.2-3.4 10.4 0 13.6"/>' },
+  };
+  const kindIcon = (k, size) => `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${KIND[k].d}</svg>`;
+  const weekRange = (a, b) => {
+    const da = PS.parse(a), db = PS.parse(b);
+    return da.getMonth() === db.getMonth() ? `${da.getDate()}–${db.getDate()} ${PS.MON[db.getMonth()]}` : `${da.getDate()} ${PS.MON[da.getMonth()]} – ${db.getDate()} ${PS.MON[db.getMonth()]}`;
+  };
+  const ST_WORD = { done: 'done', skipped: 'skipped', today: 'planned for today', planned: 'coming up', missed: 'missed' };
+
+  /* What is next for one activity this week, in a few words. */
+  function weekNext(kind, k, w, t) {
+    if (k.planned && k.done >= k.planned) {
+      if (kind === 'swim') {
+        const sw = PS.swimsDone(state).filter((e) => e.date >= w.start && e.date <= w.end).sort((a, b) => PS.swimPace(a) - PS.swimPace(b))[0];
+        if (sw) return `Done · ${km(sw.dist)} in ${PS.mmss(sw.time)}`;
+      }
+      return 'Done';
+    }
+    let due, extra = '';
+    if (kind === 'lift') { const nl = PS.nextLift(state, t); due = nl.due; extra = PS.SESSIONS[nl.type].name; }
+    else if (kind === 'morning') due = PS.morningDue(state, t).due;
+    else if (kind === 'swim') due = swimDue(t).due;
+    else due = ballDue(t).due;
+    if (due > w.end) return 'Next week';
+    const when = due < t ? 'Late' : due === t ? 'Today' : (extra ? PS.DAY : PS.DAY_LONG)[PS.dow(due)];
+    return extra ? `${when} · ${extra}` : when;
+  }
+
+  function viewWeek(t) {
+    const list = PS.weekList(state, t, 9);
+    const w = list[0];
+    const left = PS.diff(t, w.end) + 1;
+    const pct = w.planned ? Math.round((w.done / w.planned) * 100) : 0;
+    const complete = w.planned > 0 && w.done >= w.planned;
+    const rows = PS.WEEK_KINDS.map((kind) => {
+      const k = w.kinds[kind];
+      const n = Math.max(k.planned, k.done);
+      const pips = Array.from({ length: n }, (_, i) => `<i class="${i < k.done ? 'on' : ''}"></i>`).join('');
+      let sub = weekNext(kind, k, w, t);
+      if (kind === 'morning') {
+        const kmW = (state.mornings || []).filter((e) => e.status === 'done' && e.run && e.run.km > 0 && e.date >= w.start && e.date <= w.end).reduce((a, e) => a + e.run.km, 0);
+        if (kmW) sub += ` · ${fmtKm(Math.round(kmW * 10) / 10)} km run`;
+      }
+      return `<button class="wk-row" type="button" data-act="goto" data-tab="${KIND[kind].tab}" aria-label="${KIND[kind].name}: ${k.done} of ${k.planned} this week. ${esc(sub)}. Opens ${TITLES[KIND[kind].tab]}.">
+          <span class="wk-ic">${kindIcon(kind, 22)}</span>
+          <span class="wk-txt"><span class="wk-name">${KIND[kind].name}</span><span class="wk-sub">${esc(sub)}</span></span>
+          <span class="wk-pips" aria-hidden="true">${pips}</span>
+          <span class="wk-count${k.planned && k.done >= k.planned ? ' full' : ''}">${k.done}<small>/${k.planned}</small></span>
+        </button>`;
+    }).join('');
+
+    // day by day
+    const heads = w.kinds.lift.days.map((x) => {
+      const dd = PS.parse(x.d);
+      return `<span class="wk-dh${x.d === t ? ' now' : ''}"><span>${PS.DAY[dd.getDay()].charAt(0)}</span><b>${dd.getDate()}</b></span>`;
+    }).join('');
+    const grid = PS.WEEK_KINDS.map((kind, ki) => {
+      const cells = w.kinds[kind].days.map((x) => `<span class="wk-c${x.st ? ` s-${x.st}` : ''}${x.d === t ? ` now${ki === PS.WEEK_KINDS.length - 1 ? ' end' : ''}` : ''}"${x.st ? ` role="img" aria-label="${KIND[kind].name}, ${PS.dayDate(x.d)}: ${ST_WORD[x.st]}"` : ''}></span>`).join('');
+      return `<span class="wk-rl" title="${KIND[kind].name}">${kindIcon(kind, 18)}</span>${cells}`;
+    }).join('');
+
+    // past weeks
+    const cell = (k) => {
+      if (!k.tracked) return '<td class="n none">–</td>';
+      const cls = k.planned && k.done >= k.planned ? 'full' : k.done ? 'part' : 'zero';
+      return `<td class="n ${cls}">${k.done}/${k.planned}</td>`;
+    };
+    const past = list.slice(1).filter((x) => PS.WEEK_KINDS.some((kind) => x.kinds[kind].tracked));
+    const pastRows = past.map((x) => `<tr><td>${weekRange(x.start, x.end)}</td>${PS.WEEK_KINDS.map((kind) => cell(x.kinds[kind])).join('')}<td class="n tot${x.planned && x.done >= x.planned ? ' full' : ''}">${x.done}/${x.planned}</td></tr>`).join('');
+
+    return `
+      <section aria-labelledby="wkH">
+        ${secHead(`<span id="wkH">${weekRange(w.start, w.end)}</span>`, `<span class="aside">${complete ? 'Week complete' : left === 1 ? 'Last day' : `${left} days left`}</span>`)}
+        <div class="panel wk-panel">
+          <div class="wk-top">
+            <span class="wk-big">${w.done}<small>/${w.planned}</small></span>
+            <span class="wk-cap">${complete ? 'Everything planned this week is done.' : `sessions done this week`}</span>
+          </div>
+          <div class="wk-bar" role="progressbar" aria-label="Sessions done this week" aria-valuemin="0" aria-valuemax="${w.planned}" aria-valuenow="${w.done}"><i style="width:${pct}%"></i></div>
+          <div class="wk-rows">${rows}</div>
+        </div>
+      </section>
+      <section aria-labelledby="wkDayH">
+        ${secHead('<span id="wkDayH">Day by day</span>')}
+        <div class="panel wk-days">
+          <div class="wk-grid" role="group" aria-label="This week, day by day"><span></span>${heads}${grid}</div>
+          <div class="legend wk-legend">
+            <span><i class="wk-c s-done"></i>Done</span><span><i class="wk-c s-today"></i>Today</span><span><i class="wk-c s-planned"></i>Coming up</span><span><i class="wk-c s-skipped"></i>Skipped</span><span><i class="wk-c s-missed"></i>Missed</span>
+          </div>
+        </div>
+      </section>
+      ${past.length ? `<section aria-labelledby="wkPastH">
+        ${secHead('<span id="wkPastH">Past weeks</span>', `<span class="aside">Done of planned</span>`)}
+        <div class="panel wk-past">
+          <table class="v-table static wk-table">
+            <caption class="sr">Past weeks, newest first</caption>
+            <thead><tr><th scope="col">Week</th>${PS.WEEK_KINDS.map((kind) => `<th scope="col" class="n"><span class="sr">${KIND[kind].name}</span>${kindIcon(kind, 16)}</th>`).join('')}<th scope="col" class="n">All</th></tr></thead>
+            <tbody>${pastRows}</tbody>
+          </table>
+        </div>
+      </section>` : ''}`;
+  }
+
   function viewWeights(t) {
     const nl = PS.nextLift(state, t);
     const sess = PS.SESSIONS[nl.type];
@@ -1928,10 +2340,10 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
       </section>
       ${tip ? tipHTML(tip) : ''}
       <section aria-labelledby="progH">
-        ${secHead('<span id="progH">Progress</span>', '<span class="aside">Tap a lift</span>')}
+        ${secHead('<span id="progH">Progress</span>', '<span class="aside">Tap a lift for its chart</span>')}
         ${tilesHTML()}
-        ${liftChartHTML(t)}
       </section>
+      ${strengthLevelHTML()}
       <section aria-labelledby="histH">
         ${secHead('<span id="histH">History</span>', `<span class="aside">${plural(state.lifts.filter((e) => e.status === 'done').length, 'session')}</span>`)}
         ${liftHistoryHTML()}
@@ -1996,27 +2408,35 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
       const last = vals[vals.length - 1];
       const delta = vals.length ? last - vals[0] : 0;
       const sub = vals.length ? `${delta >= 0 ? '+' : '−'}${PS.kg(Math.abs(delta))} kg since ${PS.shortDate(h[0].date)}` : 'Not lifted yet';
-      return `<button class="tile" type="button" data-act="sel" data-key="${k}" aria-pressed="${liftSel === k}">
+      return `<button class="tile" type="button" data-act="chart" data-key="${k}" aria-label="${PS.LIFTS[k].name}${last != null ? `, last ${PS.kg(last)} kg` : ''}. Opens the chart.">
+          <span class="t-open" aria-hidden="true">${ICON.expand}</span>
           <span class="t-txt"><span class="t-name">${PS.LIFTS[k].name}</span><span class="t-val">${last != null ? `${PS.kg(last)}<small> kg</small>` : '–'}</span><span class="t-delta">${sub}</span></span>
           ${sparkHTML(vals)}
         </button>`;
     });
     const ph = PS.pullHistory(state);
-    const tot = ph.map((e) => PS.sum(e.pull.reps));
+    const best = ph.map((e) => Math.max(0, ...e.pull.reps));
     const lastP = ph[ph.length - 1];
-    const dP = tot.length ? tot[tot.length - 1] - tot[0] : 0;
-    out.push(`<button class="tile wide" type="button" data-act="sel" data-key="pull" aria-pressed="${liftSel === 'pull'}">
-        <span class="t-txt"><span class="t-name">Pull-ups</span><span class="t-val">${lastP ? lastP.pull.reps.join(' · ') : '–'}</span><span class="t-delta">${tot.length ? `${dP >= 0 ? '+' : '−'}${Math.abs(dP)} total reps since ${PS.shortDate(ph[0].date)}` : 'Not logged yet'}</span></span>
-        ${sparkHTML(tot)}
+    const dP = best.length ? best[best.length - 1] - best[0] : 0;
+    out.push(`<button class="tile wide" type="button" data-act="chart" data-key="pull" aria-label="Pull-ups${lastP ? `, last ${lastP.pull.reps.join(', ')}` : ''}. Opens the chart.">
+        <span class="t-open" aria-hidden="true">${ICON.expand}</span>
+        <span class="t-txt"><span class="t-name">Pull-ups</span><span class="t-val">${lastP ? lastP.pull.reps.join(' · ') : '–'}</span><span class="t-delta">${best.length ? `Best set ${dP >= 0 ? '+' : '−'}${Math.abs(dP)} since ${PS.shortDate(ph[0].date)}` : 'Not logged yet'}</span></span>
+        ${sparkHTML(best)}
       </button>`);
     return `<div class="tiles">${out.join('')}</div>`;
   }
 
-  const LEGEND = `<div class="legend">
-      <span><svg width="10" height="10" viewBox="0 0 10 10"><circle cx="5" cy="5" r="4" fill="currentColor"/></svg>Clean or easy</span>
+  const LEGEND = `<span><svg width="10" height="10" viewBox="0 0 10 10"><circle cx="5" cy="5" r="4" fill="currentColor"/></svg>Clean or easy</span>
       <span><svg width="10" height="10" viewBox="0 0 10 10"><circle cx="5" cy="5" r="3.6" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>Grind or missed reps</span>
-      <span><svg width="10" height="10" viewBox="0 0 10 10"><circle cx="5" cy="5" r="3.6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-dasharray="2 1.6"/></svg>Planned</span>
-    </div>`;
+      <span><svg width="10" height="10" viewBox="0 0 10 10"><circle cx="5" cy="5" r="3.6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-dasharray="2 1.6"/></svg>Planned</span>`;
+  function legendFor(s) {
+    const bw = PS.kg(state.settings.bodyWeight);
+    if (s.kind === 'lift') return `<div class="legend v-legend">${LEGEND}${bandKey(`Levels at ${bw} kg, as sets of 5`)}</div>`;
+    if (s.kind === 'pull') return `<div class="legend v-legend">${bandKey(`Levels at ${bw} kg, best set`)}</div>`;
+    if (s.bands) return `<div class="legend v-legend">${bandKey(`Levels for ${ageTxt()}`)}</div>`;
+    return '';
+  }
+  const bandKey = (txt) => `<span><svg width="14" height="12" viewBox="0 0 14 12"><rect width="14" height="6" fill="currentColor" opacity=".55"/><rect y="6" width="14" height="6" fill="currentColor" opacity=".22"/></svg>${txt}</span>`;
 
   function chartPanel(s, sub, extra) {
     return `<div class="panel chart-panel">
@@ -2028,19 +2448,6 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
         ${extra || ''}
         <p class="chart-hint">Tap the chart to see every entry</p>
       </div>`;
-  }
-
-  function liftChartHTML(t) {
-    const s = seriesFor(liftSel, t);
-    if (s.kind === 'pull') {
-      const last = s.points[s.points.length - 1];
-      return chartPanel(s, `Total reps over 3 sets${last ? ` · Last <b>${last.e.pull.reps.join(' · ')}</b>` : ''}`,
-        '<p class="small muted chart-note">Add weight once the first set reaches 10 clean reps.</p>');
-    }
-    const last = s.points[s.points.length - 1];
-    const nd = nextDateFor(liftSel, t);
-    const plan = PS.liftPlan(state, liftSel, nd);
-    return chartPanel(s, `${last ? `Last <b>${PS.kg(last.y)} kg</b> · ` : ''}Next <b>${PS.kg(plan.w)} kg</b> ${PS.DAY[PS.dow(nd)]} ${PS.shortDate(nd)}`, LEGEND);
   }
 
   function liftSummary(e) {
@@ -2095,21 +2502,35 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
         tip: `<b>${PS.kg(it.w)} kg</b>${it.reps.join(' · ')} · ${liftWord(k, it).toLowerCase()} · ${PS.dayDate(e.date)}` };
     });
     return {
-      key: k, kind: 'lift', title: L.name, points,
+      key: k, kind: 'lift', title: L.name, points, bands: chartBands(k),
       forecast: points.length ? { x: nd, y: plan.w, label: `Next ${PS.kg(plan.w)}`, plan, tip: `<b>Next ${PS.kg(plan.w)} kg</b>${esc(plan.why)} · ${PS.dayDate(nd)}` } : null,
       fmt: (v) => PS.kg(v), label: (v) => `${PS.kg(v)}`, unit: 'kg', ticks: 'kg',
       empty: 'Log a session to start the line.', aria: `${L.name} working weight per session`,
     };
   }
 
+  /* Pull-ups plot the best set of each session, since that is what the levels grade. */
   function pullSeries() {
     const ph = PS.pullHistory(state);
-    const points = ph.map((e) => ({
-      x: e.date, y: PS.sum(e.pull.reps), e,
-      tip: `<b>${PS.sum(e.pull.reps)} reps</b>${e.pull.reps.join(' · ')}${e.pull.add ? ` · +${PS.kg(e.pull.add)} kg` : ''} · ${PS.dayDate(e.date)}`,
-    }));
-    return { key: 'pull', kind: 'pull', title: 'Pull-ups', points, forecast: null, fmt: String, label: String, unit: 'reps', ticks: 'int',
-      empty: 'Log a session to start the line.', aria: 'Pull-up total reps per session' };
+    const points = ph.map((e) => {
+      const best = Math.max(0, ...e.pull.reps);
+      return { x: e.date, y: best, e,
+        tip: `<b>${best} reps</b>best set · ${e.pull.reps.join(' · ')}${e.pull.add ? ` · +${PS.kg(e.pull.add)} kg` : ''} · ${PS.dayDate(e.date)}` };
+    });
+    return { key: 'pull', kind: 'pull', title: 'Pull-ups', points, forecast: null, bands: chartBands('pull'), fmt: String, label: String, unit: 'reps', ticks: 'int',
+      empty: 'Log a session to start the line.', aria: 'Pull-ups, best set per session' };
+  }
+
+  /* Level bands in the chart's own units: 5-rep working weight for a lift,
+     reps in one set for pull-ups, 1 km time for the swim. */
+  function chartBands(key) {
+    if (key === 'swim') {
+      const r = swimLevel();
+      return { t: r.std, lowerBetter: true, next: r.lv.idx < 4 ? r.lv.idx + 1 : null };
+    }
+    const r = liftLevel(key);
+    const t = key === 'pull' ? r.std : r.std.map((v) => v * PS.REP_PCT[5]);
+    return { t, lowerBetter: false, next: r.v != null && r.lv.idx < 4 ? r.lv.idx + 1 : null };
   }
 
   function runSeries() {
@@ -2139,6 +2560,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
           return { x: e.date, y: Math.round(t1k), e, tip: `<b>${PS.mmss(t1k)}</b>${e.dist === 1000 ? '1 km' : `${km(e.dist)} in ${PS.mmss(e.time)}`} · ${PS.mmss(PS.swimPace(e))}/100 m · ${PS.dayDate(e.date)}` };
         }),
         refs: [{ y: start, label: `Start ${PS.mmss(start)}` }, { y: goal.time, label: `Goal ${PS.mmss(goal.time)}` }],
+        bands: chartBands('swim'),
         fmt: (v) => PS.mmss(v), label: (v) => PS.mmss(v),
         empty: 'Log your first swim to start the line.', aria: '1 km time per swim',
       });
@@ -2191,13 +2613,17 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
   }
 
   /* Builds the inside of a chart SVG at W x H. opt.big draws the full-screen
-     version with a selected entry (opt.sel: point index, -1 = planned). */
+     version with a selected entry (opt.sel: point index, -1 = planned).
+     s.bands shades the Beginner to Elite levels behind the line, and the chart
+     always reaches into the next level so you can see how far away it is. */
   function chartSVG(s, W, H, opt) {
     const big = !!opt.big;
     const pl = big ? 46 : 38, pr = big ? 24 : 16, pt = big ? 34 : 24, pb = big ? 30 : 26;
     const pts = s.points;
     const fc = s.forecast && pts.length ? s.forecast : null;
     const refs = (s.refs || []).filter(Boolean);
+    const bd = s.bands && (pts.length || refs.length) ? s.bands : null;
+    const nextT = bd && bd.next != null ? bd.t[bd.next] : null;
     let xs = pts.map((p) => p.x).concat(fc ? [fc.x] : []);
     const t = T();
     if (!xs.length) xs = [PS.addDays(t, -28), t];
@@ -2206,23 +2632,51 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     const span = PS.diff(x0, x1);
     const padD = Math.max(1, span * 0.05);
     const X = (d) => pl + ((PS.diff(x0, d) + padD) / (span + 2 * padD)) * (W - pl - pr);
-    let ys = pts.map((p) => p.y).concat(fc ? [fc.y] : [], refs.map((r) => r.y));
+    let ys = pts.map((p) => p.y).concat(fc ? [fc.y] : [], refs.map((r) => r.y), nextT != null ? [nextT] : []);
     if (!ys.length) ys = [0, 1];
     let lo = Math.min(...ys), hi = Math.max(...ys);
     if (lo === hi) { lo -= s.time ? 60 : 5; hi += s.time ? 60 : 5; }
     const nT = big && H > 260 ? 5 : 4;
     const ticks = s.time ? timeTicks(lo, hi, nT) : niceTicks(lo, hi, nT, s.ticks);
     lo = ticks[0]; hi = ticks[ticks.length - 1];
+    // show a strip of the next level, tall enough for its name, not just its edge
+    if (nextT != null) {
+      const q = Math.max(0.18, ((big ? 10.5 : 9.5) + 10) / Math.max(60, H - pt - pb));
+      if (bd.lowerBetter) lo = Math.min(lo, nextT - (q * (hi - nextT)) / (1 - q));
+      else hi = Math.max(hi, nextT + (q * (nextT - lo)) / (1 - q));
+    }
     const Y = (v) => pt + (1 - (v - lo) / (hi - lo || 1)) * (H - pt - pb);
     const fmt = s.fmt || String;
     const ax = big ? 'c-axis big' : 'c-axis';
     const f1 = (v) => v.toFixed(1);
+    const xa = pl, xb = W - pr;
+    // things the level names must not cover: [x1, y1, x2, y2]
+    const obs = [];
+    const mark = (x, y, w, h) => obs.push([x - w / 2, y - h / 2, x + w / 2, y + h / 2]);
+    const markText = (x, y, txt, fs, anchor) => {
+      const w = String(txt).length * fs * 0.62 + 4;
+      const l = anchor === 'end' ? x - w : anchor === 'middle' ? x - w / 2 : x;
+      obs.push([l, y - fs - 1, l + w, y + 3]);
+    };
 
     let g = '';
+    const bandRows = [];
+    if (bd) {
+      for (let i = 0; i < 5; i++) {
+        const a = bd.t[i], b = i < 4 ? bd.t[i + 1] : bd.lowerBetter ? -Infinity : Infinity;
+        const vMin = Math.max(Math.min(a, b), lo), vMax = Math.min(Math.max(a, b), hi);
+        if (!(vMax > vMin)) continue;
+        const yT = Y(vMax), yB = Y(vMin);
+        g += `<rect class="c-band l${i}" x="${xa}" y="${f1(yT)}" width="${f1(xb - xa)}" height="${f1(yB - yT)}"/>`;
+        bandRows.push({ i, yT, yB });
+      }
+    }
+    const edges = bd ? bd.t.filter((v) => v > lo && v < hi).map((v) => Y(v)) : [];
     ticks.forEach((v) => {
-      g += `<line class="c-grid" x1="${pl}" x2="${W - pr}" y1="${f1(Y(v))}" y2="${f1(Y(v))}"/>`;
+      if (!edges.some((y) => Math.abs(y - Y(v)) < 6)) g += `<line class="c-grid" x1="${xa}" x2="${xb}" y1="${f1(Y(v))}" y2="${f1(Y(v))}"/>`;
       g += `<text class="${ax}" x="${pl - 8}" y="${f1(Y(v) + 4)}" text-anchor="end">${fmt(v)}</text>`;
     });
+    edges.forEach((y) => { g += `<line class="c-band-edge" x1="${xa}" x2="${xb}" y1="${f1(y)}" y2="${f1(y)}"/>`; });
     const months = [];
     let m = `${x0.slice(0, 7)}-01`;
     if (m < x0) { const d = PS.parse(m); d.setMonth(d.getMonth() + 1); m = PS.iso(d); }
@@ -2234,59 +2688,99 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     });
     refs.forEach((r) => {
       const y = f1(Y(r.y));
-      g += `<line class="c-ref" x1="${pl}" x2="${W - pr}" y1="${y}" y2="${y}"/>`;
-      g += `<text class="c-ref-label${big ? ' big' : ''}" x="${W - pr}" y="${f1(Y(r.y) - 6)}" text-anchor="end">${esc(r.label)}</text>`;
+      g += `<line class="c-ref" x1="${xa}" x2="${xb}" y1="${y}" y2="${y}"/>`;
+      g += `<text class="c-ref-label${big ? ' big' : ''}" x="${xb}" y="${f1(Y(r.y) - 6)}" text-anchor="end">${esc(r.label)}</text>`;
+      markText(xb, Y(r.y) - 6, r.label, big ? 12 : 10.5, 'end');
     });
 
+    let d = '';
     const hits = [];
     const sel = big ? opt.sel : null;
     if (pts.length) {
       const P = pts.map((p) => [X(p.x), Y(p.y)]);
       const line = P.map((q, i) => `${i ? 'L' : 'M'}${f1(q[0])} ${f1(q[1])}`).join(' ');
       if (P.length > 1) {
-        g += `<path class="c-area" d="${line} L${f1(P[P.length - 1][0])} ${f1(Y(lo))} L${f1(P[0][0])} ${f1(Y(lo))} Z"/>`;
-        g += `<path class="c-line" d="${line}"/>`;
+        if (!bd) d += `<path class="c-area" d="${line} L${f1(P[P.length - 1][0])} ${f1(Y(lo))} L${f1(P[0][0])} ${f1(Y(lo))} Z"/>`;
+        d += `<path class="c-line" d="${line}"/>`;
       }
+      const trace = (ax0, ay0, ax1, ay1) => {
+        const n = Math.max(1, Math.ceil(Math.hypot(ax1 - ax0, ay1 - ay0) / 5));
+        for (let k = 0; k <= n; k++) mark(ax0 + ((ax1 - ax0) * k) / n, ay0 + ((ay1 - ay0) * k) / n, 6, 6);
+      };
+      for (let k = 1; k < P.length; k++) trace(P[k - 1][0], P[k - 1][1], P[k][0], P[k][1]);
+      P.forEach((q) => mark(q[0], q[1], 16, 16));
       const [lx, ly] = P[P.length - 1];
       const fx = fc ? X(fc.x) : 0, fy = fc ? Y(fc.y) : 0;
+      if (fc) { trace(lx, ly, fx, fy); mark(fx, fy, 16, 16); }
       let sxy = null;
       if (sel === -1 && fc) sxy = [fx, fy];
       else if (sel != null && sel >= 0 && P[sel]) sxy = P[sel];
-      if (sxy) g += `<line class="c-sel" x1="${f1(sxy[0])}" x2="${f1(sxy[0])}" y1="${pt - 12}" y2="${H - pb}"/>`;
+      if (sxy) d += `<line class="c-sel" x1="${f1(sxy[0])}" x2="${f1(sxy[0])}" y1="${pt - 12}" y2="${H - pb}"/>`;
       if (fc) {
-        g += `<path class="c-fc" d="M${f1(lx)} ${f1(ly)} L${f1(fx)} ${f1(fy)}"/>`;
-        g += `<circle class="c-fc-dot${sel === -1 ? ' sel' : ''}" cx="${f1(fx)}" cy="${f1(fy)}" r="${big ? (sel === -1 ? 7.5 : 6) : 5}"/>`;
+        d += `<path class="c-fc" d="M${f1(lx)} ${f1(ly)} L${f1(fx)} ${f1(fy)}"/>`;
+        d += `<circle class="c-fc-dot${sel === -1 ? ' sel' : ''}" cx="${f1(fx)}" cy="${f1(fy)}" r="${big ? (sel === -1 ? 7.5 : 6) : 5}"/>`;
         hits.push({ cx: fx, cy: fy, i: -1, html: fc.tip });
       }
       P.forEach((q, i) => {
         const on = sel === i;
         const r = big ? (on ? 7.5 : 5.5) : 4.5;
-        g += `<circle class="c-dot${pts[i].hollow ? ' hollow' : ''}${on ? ' sel' : ''}" data-i="${i}" cx="${f1(q[0])}" cy="${f1(q[1])}" r="${r}"/>`;
+        d += `<circle class="c-dot${pts[i].hollow ? ' hollow' : ''}${on ? ' sel' : ''}" data-i="${i}" cx="${f1(q[0])}" cy="${f1(q[1])}" r="${r}"/>`;
         hits.push({ cx: q[0], cy: q[1], i, html: pts[i].tip });
       });
       const lab = big ? 'c-label big' : 'c-label';
+      const lfs = big ? 14 : 11;
       const clampX = (x) => Math.max(pl + 18, Math.min(W - 18, x));
       const above = (y) => (y - (big ? 16 : 11) < 12 ? y + (big ? 26 : 19) : y - (big ? 16 : 11));
       if (sxy) {
         const txt = sel === -1 ? fc.label : s.label(pts[sel].y);
-        g += `<text class="${lab}" x="${f1(clampX(sxy[0]))}" y="${f1(above(sxy[1]))}" text-anchor="middle">${esc(txt)}</text>`;
+        d += `<text class="${lab}" x="${f1(clampX(sxy[0]))}" y="${f1(above(sxy[1]))}" text-anchor="middle">${esc(txt)}</text>`;
       }
       const near = (x) => sxy && Math.abs(x - sxy[0]) < (big ? 64 : 0);
+      let fty = fc ? (fy <= ly ? fy - (big ? 15 : 11) : fy + (big ? 24 : 19)) : 0;
+      if (fc && fty > H - pb - 3) fty = fy - (big ? 15 : 11);
+      if (fc) markText(Math.min(fx + 6, W - 2), fty, fc.label, lfs, 'end');
       if (fc && sel !== -1 && !near(fx)) {
-        const ty = fy <= ly ? fy - (big ? 15 : 11) : fy + (big ? 24 : 19);
-        g += `<text class="${lab} dim" x="${f1(Math.min(fx + 6, W - 2))}" y="${f1(ty)}" text-anchor="end">${esc(fc.label)}</text>`;
+        d += `<text class="${lab} dim" x="${f1(Math.min(fx + 6, W - 2))}" y="${f1(fty)}" text-anchor="end">${esc(fc.label)}</text>`;
       }
       const lastI = pts.length - 1;
       const clash = fc && Math.abs(fx - lx) < 72;
+      if (!clash) markText(clampX(lx), above(ly), s.label(pts[lastI].y), lfs, 'middle');
       if (sel !== lastI && !clash && !near(lx)) {
-        g += `<text class="${lab}${big ? ' dim' : ''}" x="${f1(clampX(lx))}" y="${f1(above(ly))}" text-anchor="middle">${esc(s.label(pts[lastI].y))}</text>`;
+        d += `<text class="${lab}${big ? ' dim' : ''}" x="${f1(clampX(lx))}" y="${f1(above(ly))}" text-anchor="middle">${esc(s.label(pts[lastI].y))}</text>`;
       }
     } else {
-      g += `<text class="c-empty" x="${(pl + (W - pr)) / 2}" y="${(pt + (H - pb)) / 2 + 4}" text-anchor="middle">${esc(s.empty || 'No data yet')}</text>`;
+      const cx = (pl + (W - pr)) / 2;
+      const ls = [pt, H - pb].concat(edges, refs.map((r) => Y(r.y))).sort((a, b) => a - b);
+      let gap = [ls[0], ls[0]];
+      for (let k = 1; k < ls.length; k++) if (ls[k] - ls[k - 1] > gap[1] - gap[0]) gap = [ls[k - 1], ls[k]];
+      const cy = (gap[0] + gap[1]) / 2 + 4;
+      d += `<text class="c-empty" x="${cx}" y="${cy}" text-anchor="middle">${esc(s.empty || 'No data yet')}</text>`;
+      markText(cx, cy, s.empty || 'No data yet', 13, 'middle');
     }
-    if (!big) g += `<line class="c-cross" x1="0" x2="0" y1="${pt - 8}" y2="${H - pb}"/>`;
+    // level names inside their bands, in a corner the data leaves free
+    const bfs = big ? 10.5 : 9.5;
+    const gapTo = (b) => obs.reduce((m, o) => {
+      const dx = Math.max(0, o[0] - b[2], b[0] - o[2]), dy = Math.max(0, o[1] - b[3], b[1] - o[3]);
+      return Math.min(m, Math.hypot(dx, dy));
+    }, 40);
+    bandRows.forEach(({ i, yT, yB }) => {
+      if (yB - yT < bfs + 7) return;
+      const txt = PS.LEVELS[i].toUpperCase();
+      const w = txt.length * bfs * 0.76;
+      let pick = null;
+      [yT + bfs + 4, yB - 5, (yT + yB) / 2 + bfs / 2 - 1].forEach((by) => {
+        [[xa + 7, 'start'], [xb - 7, 'end']].forEach(([bx, an]) => {
+          const b = an === 'start' ? [bx - 3, by - bfs - 2, bx + w + 3, by + 4] : [bx - w - 3, by - bfs - 2, bx + 3, by + 4];
+          if (b[1] < yT - 0.5 || b[3] > yB + 0.5) return;
+          const room = gapTo(b);
+          if (room > 0 && (!pick || room > pick.room + 2)) pick = { bx, by, an, room };
+        });
+      });
+      if (pick) g += `<text class="c-band-label${big ? ' big' : ''}" x="${f1(pick.bx)}" y="${f1(pick.by)}" text-anchor="${pick.an}">${txt}</text>`;
+    });
+    if (!big) d += `<line class="c-cross" x1="0" x2="0" y1="${pt - 8}" y2="${H - pb}"/>`;
     hits.sort((a, b) => a.cx - b.cx);
-    return { svg: g, hits };
+    return { svg: g + d, hits };
   }
 
   function inlineChart(s) {
@@ -2347,17 +2841,16 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     if (!n) return s.kind === 'swim' ? 'No swims logged yet' : 'No sessions logged yet';
     if (s.kind === 'lift') {
       const best = Math.max(...s.points.map((p) => p.y));
-      return `${plural(n, 'session')} · Best ${PS.kg(best)} kg · Started at ${PS.kg(s.points[0].y)} kg`;
+      return `${plural(n, 'session')} · Best ${PS.kg(best)} kg · ${nextLevelTxt(s.key)}`;
     }
     if (s.kind === 'pull') {
-      const best = Math.max(...s.points.map((p) => p.e.pull.reps[0] || 0));
-      return `${plural(n, 'session')} · Best first set ${best} · Best total ${Math.max(...s.points.map((p) => p.y))}`;
+      return `${plural(n, 'session')} · Best set ${Math.max(...s.points.map((p) => p.y))} · ${nextLevelTxt('pull')}`;
     }
     if (s.kind === 'run') {
       const km = s.points.reduce((a, p) => a + p.e.run.km, 0);
       return `${plural(n, 'run')} · Best ${PS.mmss(Math.min(...s.points.map((p) => p.y)))} per km · ${fmtKm(Math.round(km * 10) / 10)} km in total`;
     }
-    if (s.metric === 't1k') return `${plural(n, 'swim')} · Best ${PS.mmss(Math.min(...s.points.map((p) => p.y)))} · Goal ${PS.mmss(s.goal.time)}`;
+    if (s.metric === 't1k') return `${plural(n, 'swim')} · Best ${PS.mmss(Math.min(...s.points.map((p) => p.y)))} · ${nextLevelTxt('swim')}`;
     if (s.metric === 'strokes') return `${plural(n, 'swim')} · Fewest ${Math.min(...s.points.map((p) => p.y))} strokes`;
     return `${plural(n, 'swim')} · Longest ${km(Math.max(...s.points.map((p) => p.y)))}`;
   }
@@ -2378,7 +2871,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
         rows.push(`<tr data-i="${i}" tabindex="-1"><td>${dotCell(p)}${PS.dayDate(p.x)}</td><td class="n">${PS.kg(p.it.w)}</td><td class="n">${p.it.reps.join('·')}</td><td class="n">${prev ? changeTxt(p.it.w - prev.it.w) : 'Start'}</td></tr>`);
       }
     } else if (s.kind === 'pull') {
-      head = ['Date', 'Sets', 'Total', 'Change'];
+      head = ['Date', 'Sets', 'Best', 'Change'];
       for (let i = s.points.length - 1; i >= 0; i--) {
         const p = s.points[i], prev = s.points[i - 1];
         const add = p.e.pull.add ? ` +${PS.kg(p.e.pull.add)}kg` : '';
@@ -2421,9 +2914,9 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     }
     if (s.kind === 'pull') {
       const d = prev ? p.y - prev.y : 0;
-      const ch = prev ? (d === 0 ? 'Same total' : `${changeTxt(d)} ${Math.abs(d) === 1 ? 'rep' : 'reps'}`) : 'First session';
+      const ch = prev ? (d === 0 ? 'Same best set' : `${changeTxt(d)} ${Math.abs(d) === 1 ? 'rep' : 'reps'}`) : 'First session';
       return `<div class="r-top"><span class="r-date">${PS.dayDate(p.x)}</span><span class="r-chip">${ch}</span><button class="link r-edit" type="button" data-vedit="lift|${esc(p.e.id)}">Edit</button></div>
-        <div class="r-main"><span class="r-val">${p.y}<small>reps</small></span><span class="r-sub">${p.e.pull.reps.join(' · ')}${p.e.pull.add ? ` · +${PS.kg(p.e.pull.add)} kg` : ' · Bodyweight'}</span></div>`;
+        <div class="r-main"><span class="r-val">${p.y}<small>reps, best set</small></span><span class="r-sub">${p.e.pull.reps.join(' · ')} · ${PS.sum(p.e.pull.reps)} in total${p.e.pull.add ? ` · +${PS.kg(p.e.pull.add)} kg` : ''}</span></div>`;
     }
     if (s.kind === 'run') {
       const e = p.e;
@@ -2443,9 +2936,9 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     closeViewer(true);
     const el = document.createElement('div');
     el.className = 'viewer-wrap';
-    el.innerHTML = '<div class="scrim" data-vclose></div><section class="viewer" role="dialog" aria-modal="true" aria-labelledby="vTitle"></section>';
+    el.innerHTML = '<div class="scrim"></div><section class="viewer" role="dialog" aria-modal="true" aria-labelledby="vTitle"></section>';
+    lockScroll('viewer', true);
     document.body.appendChild(el);
-    document.documentElement.classList.add('locked');
     setInert(true);
     viewer = { el, key, startKey: key, sel: null, prevFocus: document.activeElement, scrub: false, ro: null, s: null, hits: [], W: 0, H: 0 };
     viewer.onResize = () => drawViewerChart();
@@ -2500,6 +2993,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
       <div class="v-body">
         <div class="v-left">
           <div class="v-chart" tabindex="0" role="group" aria-label="${esc(s.aria)}. Arrow keys move between entries."></div>
+          ${legendFor(s)}
           <div class="v-readout" aria-live="polite"></div>
         </div>
         <div class="v-right">${tableHTML(s)}</div>
@@ -2610,17 +3104,13 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     viewer = null;
     if (ro) ro.disconnect();
     window.removeEventListener('resize', onResize);
-    document.documentElement.classList.remove('locked');
+    unlockScroll('viewer');
     setInert(false);
     if (instant || reduced) el.remove();
     else { el.classList.add('closing'); setTimeout(() => el.remove(), 200); }
-    if (key !== startKey && LIFT_KEYS.includes(key)) {
-      liftSel = key;
-      render();
-      const cw = $('.chart-wrap', main);
-      if (cw && !instant) cw.focus({ preventScroll: true });
-      return;
-    }
+    // switched lifts inside the chart: come back to that lift's tile
+    const tileEl = key !== startKey && LIFT_KEYS.includes(key) ? $(`.tile[data-key="${key}"]`, main) : null;
+    if (tileEl) { if (!instant) tileEl.focus({ preventScroll: true }); return; }
     if (prevFocus && prevFocus.isConnected && prevFocus.focus) prevFocus.focus({ preventScroll: true });
   }
 
@@ -2722,7 +3212,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     }).join('');
     const el = document.createElement('div');
     el.className = 'viewer-wrap';
-    el.innerHTML = `<div class="scrim" data-vclose></div>
+    el.innerHTML = `<div class="scrim"></div>
       <section class="viewer" role="dialog" aria-modal="true" aria-labelledby="vTitle">
         <header class="v-head">
           <div class="v-title"><h2 id="vTitle">Mornings</h2><p class="v-stats">${st.total} done · ${st.possible ? `${pctOf(st.total, st.possible)}% since ${PS.shortDate(st.start)}` : `Since ${PS.shortDate(st.start)}`} · Best streak ${st.best}${st.bag.known ? ` · Bag on ${st.bag.yes} of ${st.bag.known}` : ''}</p></div>
@@ -2738,8 +3228,8 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
         </div>
       </section>`;
     const prevFocus = document.activeElement;
+    lockScroll('viewer', true);
     document.body.appendChild(el);
-    document.documentElement.classList.add('locked');
     setInert(true);
     viewer = { el, key: 'mornings', startKey: 'mornings', sel: null, prevFocus, scrub: false, ro: null, s: null, hits: [], onResize: () => fillMorningGrid(el) };
     window.addEventListener('resize', viewer.onResize);
@@ -2863,6 +3353,177 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     });
   }
 
+  /* ---------- levels: strength and swim standards ---------- */
+  const LV = PS.LEVELS;
+  const lvName = (idx) => (idx < 0 ? 'Starting out' : LV[idx]);
+  const kgR = (x) => String(Math.round(x));
+  const LV_SRC = {
+    lift: ['Strength Level', 'https://strengthlevel.com/strength-standards/male/kg'],
+    pull: ['Strength Level', 'https://strengthlevel.com/strength-standards/pull-ups'],
+    swim: ['Swimming Level', 'https://swimminglevel.com/swimming-times/1000m-times'],
+  };
+  const LV_SCALE = '<div class="lv-scale" aria-hidden="true"><span style="left:20%">B</span><span style="left:40%">N</span><span style="left:60%">I</span><span style="left:80%">A</span><span style="left:100%">E</span></div>';
+  const LV_KEY = '<p class="lv-key">B Beginner · N Novice · I Intermediate · A Advanced · E Elite</p>';
+  const lvBar = (pos) => `<span class="lv-bar" aria-hidden="true"><i style="width:${((pos / 5) * 100).toFixed(1)}%"></i><b style="left:20%"></b><b style="left:40%"></b><b style="left:60%"></b><b style="left:80%"></b></span>`;
+  const ageTxt = () => (state.settings.age ? `men aged ${state.settings.age}` : 'men aged 20 to 30');
+
+  function liftLevel(k) {
+    const std = PS.strengthStandards(k, state.settings.bodyWeight);
+    const best = k === 'pull' ? PS.bestPull(state) : PS.bestMax(state, k);
+    const v = best ? (k === 'pull' ? best.reps : best.max) : null;
+    return { k, name: k === 'pull' ? 'Pull-ups' : PS.LIFTS[k].name, std, best, v, lv: v == null ? { idx: -1, pos: 0 } : PS.levelOf(v, std, false) };
+  }
+
+  function swimLevel() {
+    const std = PS.swimStandards(state.settings.age);
+    const done = PS.swimsDone(state);
+    const base = state.settings.swimBase;
+    const bestE = done.length ? done.reduce((a, e) => (PS.swimPace(e) < PS.swimPace(a) ? e : a)) : null;
+    const v = bestE ? PS.swimPace(bestE) * 10 : (base.time * 1000) / base.dist;
+    return { k: 'swim', name: '1 km breaststroke', std, best: bestE, v, lv: PS.levelOf(v, std, true) };
+  }
+
+  function lvRowHTML(r, sub) {
+    const has = r.v != null;
+    return `<button class="lv-row" type="button" data-act="level" data-key="${r.k}" aria-label="${esc(r.name)}: ${has ? lvName(r.lv.idx) : 'no sessions yet'}. Show the standards.">
+        <span class="lv-top"><span class="lv-name">${esc(r.name)}</span><span class="lv-pill${has && r.lv.idx >= 0 ? '' : ' none'}">${has ? lvName(r.lv.idx) : 'No data yet'}</span></span>
+        ${lvBar(has ? r.lv.pos : 0)}
+        <span class="lv-sub">${sub}${chev}</span>
+      </button>`;
+  }
+
+  function liftSub(r) {
+    if (r.v == null) return 'Log a session to see your level';
+    const nx = r.lv.idx + 1;
+    if (r.k === 'pull') return `<span>Best set <b>${r.v} reps</b> · ${nx <= 4 ? `${LV[nx]} at ${r.std[nx]}` : 'Top level'}</span>`;
+    return `<span>Est. max <b>${kgR(r.v)} kg</b> · ${nx <= 4 ? `${LV[nx]} at ${kgR(r.std[nx])} kg` : 'Top level'}</span>`;
+  }
+
+  function strengthLevelHTML() {
+    const rows = ['squat', 'bench', 'deadlift', 'ohp', 'pull'].map(liftLevel);
+    return `<section aria-labelledby="lvH">
+        ${secHead('<span id="lvH">Strength level</span>', `<button class="link" type="button" data-act="you">At ${PS.kg(state.settings.bodyWeight)} kg · Change</button>`)}
+        <div class="panel lv-panel">
+          ${LV_SCALE}
+          ${rows.map((r) => lvRowHTML(r, liftSub(r))).join('')}
+          ${LV_KEY}
+        </div>
+      </section>`;
+  }
+
+  function swimLevelHTML() {
+    const r = swimLevel();
+    const nx = r.lv.idx + 1;
+    const sub = `<span>${r.best ? 'Best' : 'Start'} <b>${PS.mmss(r.v)}</b> · ${nx <= 4 ? `${LV[nx]} at ${PS.mmss(r.std[nx])}` : 'Top level'}</span>`;
+    return `<section aria-labelledby="slvH">
+        ${secHead('<span id="slvH">Level</span>', `<button class="link" type="button" data-act="you">Vs ${ageTxt()} · Change</button>`)}
+        <div class="panel lv-panel">
+          ${LV_SCALE}
+          ${lvRowHTML(r, sub)}
+          ${LV_KEY}
+        </div>
+      </section>`;
+  }
+
+  /* The training weight that reaches a given max: a set of 5, rounded up to the next 2.5 kg. */
+  const target5 = (max) => Math.ceil((max * PS.REP_PCT[5]) / 2.5) * 2.5;
+
+  /* "Novice at 80 kg × 5": the next level, in the terms you train in. */
+  function nextLevelTxt(key) {
+    const r = key === 'swim' ? swimLevel() : liftLevel(key);
+    if (r.v == null) return '';
+    const nx = r.lv.idx + 1;
+    if (nx > 4) return 'Elite level';
+    if (key === 'swim') return `${LV[nx]} at ${PS.mmss(r.std[nx])}`;
+    if (key === 'pull') return `${LV[nx]} at ${r.std[nx]}\u00a0reps`;
+    return `${LV[nx]} at ${PS.kg(target5(r.std[nx]))}\u00a0kg\u00a0×\u00a05`;
+  }
+
+  /* Detail: where you stand, what the next level takes, and the full table. */
+  function openLevelSheet(k) {
+    const t = T();
+    const isSwim = k === 'swim';
+    const r = isSwim ? swimLevel() : liftLevel(k);
+    const has = r.v != null;
+    const idx = r.lv.idx, nx = idx + 1;
+    const bw = PS.kg(state.settings.bodyWeight);
+    const src = isSwim ? LV_SRC.swim : k === 'pull' ? LV_SRC.pull : LV_SRC.lift;
+    const youRow = (cells) => `<tr class="on"><td>You</td>${cells}</tr>`;
+    let who, best = '', next = '', head, rows = [], how;
+    if (isSwim) {
+      who = `${idx < 0 ? 'Slower than the Beginner time' : `Faster than ${PS.LEVEL_PCT[idx]}% of swimmers`} among ${ageTxt()}.`;
+      best = r.best
+        ? `Your best is <b>${PS.mmss(r.v)}</b> for 1 km (${PS.mmss(r.v / 10)} per 100 m), from ${PS.dayDate(r.best.date)}.`
+        : `Your starting time is <b>${PS.mmss(r.v)}</b> for 1 km. Log a swim to update it.`;
+      const goal = PS.SWIM_GOALS[state.settings.swimGoal];
+      const goalT = goal && goal.time ? goal.time : null;
+      next = nx <= 4
+        ? `<b>${LV[nx]}</b> at ${PS.mmss(r.std[nx])} for 1 km, which is ${PS.mmss(r.std[nx] / 10)} per 100 m.${goalT ? ` Your goal of ${PS.mmss(goalT)} would put you at ${lvName(PS.levelOf(goalT, r.std, true).idx)}.` : ''}`
+        : 'You are at the top level.';
+      head = ['Level', '1 km', 'Per 100 m', 'Faster than'];
+      r.std.forEach((v, i) => rows.push(`<tr><td>${LV[i]}</td><td class="n">${PS.mmss(v)}</td><td class="n">${PS.mmss(v / 10)}</td><td class="n">${PS.LEVEL_PCT[i]}%</td></tr>`));
+      const pos = r.std.findIndex((v) => v < r.v);
+      rows.splice(pos < 0 ? rows.length : pos, 0, youRow(`<td class="n">${PS.mmss(r.v)}</td><td class="n">${PS.mmss(r.v / 10)}</td><td class="n"></td>`));
+      how = `Times are from Swimming Level for ${ageTxt()}. They aren't split by stroke, and distance swimmers mostly swim freestyle, so the app adds ${Math.round((PS.BREAST_FACTOR - 1) * 100)}% for breaststroke. That is the gap between the men's freestyle and breaststroke world records at 100 m and 200 m. Set your age in Settings to compare with your own age group.`;
+    } else if (k === 'pull') {
+      who = idx < 0 ? 'Below the Beginner standard.' : `Better than ${PS.LEVEL_PCT[idx]}% of lifters around ${bw} kg body weight.`;
+      best = has ? `Your best set is <b>${r.v} reps</b>, on ${PS.dayDate(r.best.date)}.` : 'Log a session with pull-ups to see your level.';
+      next = nx <= 4 ? `<b>${LV[nx]}</b> at ${r.std[nx]} reps in one set.${has ? ` That is ${r.std[nx] - r.v} more than your best.` : ''}` : 'You are at the top level.';
+      head = ['Level', 'Reps', 'Better than'];
+      r.std.forEach((v, i) => rows.push(`<tr><td>${LV[i]}</td><td class="n">${v}</td><td class="n">${PS.LEVEL_PCT[i]}%</td></tr>`));
+      if (has) {
+        const pos = r.std.findIndex((v) => v > r.v);
+        rows.splice(pos < 0 ? rows.length : pos, 0, youRow(`<td class="n">${r.v}</td><td class="n"></td>`));
+      }
+      how = `Standards are from Strength Level for men around ${bw} kg. They count reps in one set, so the app uses your best single set.`;
+    } else {
+      const L = PS.LIFTS[k];
+      who = idx < 0 ? `Below the Beginner standard at ${bw} kg body weight.` : `Stronger than ${PS.LEVEL_PCT[idx]}% of lifters at ${bw} kg body weight.`;
+      best = has
+        ? `Your estimated max is <b>${kgR(r.v)} kg</b>, from ${PS.kg(r.best.w)} kg × ${r.best.reps} on ${PS.dayDate(r.best.date)}.`
+        : 'Log a session to see your level.';
+      if (nx <= 4) {
+        const nd = nextDateFor(k, t);
+        const plan = PS.liftPlan(state, k, nd);
+        const tw = target5(r.std[nx]);
+        const n = plan.w >= tw ? 1 : Math.ceil((tw - plan.w) / L.inc) + 1;
+        next = `<b>${LV[nx]}</b> at a ${kgR(r.std[nx])} kg max. In training that's about <b>${PS.kg(tw)} kg × 5</b>. ${n === 1 ? `Your next session (${PS.kg(plan.w)} kg) gets you there if it's clean.` : `Next up is ${PS.kg(plan.w)} kg, so you're about ${n} clean sessions away (about ${n} weeks).`}`;
+      } else next = 'You are at the top level.';
+      head = ['Level', 'Max', '5 reps', 'Stronger than'];
+      r.std.forEach((v, i) => rows.push(`<tr><td>${LV[i]}</td><td class="n">${kgR(v)}</td><td class="n">${PS.kg(target5(v))}</td><td class="n">${PS.LEVEL_PCT[i]}%</td></tr>`));
+      if (has) {
+        const pos = r.std.findIndex((v) => v > r.v);
+        rows.splice(pos < 0 ? rows.length : pos, 0, youRow(`<td class="n">${kgR(r.v)}</td><td class="n">${PS.kg(r.best.w)} × ${r.best.reps}</td><td class="n"></td>`));
+      }
+      how = `Standards are from Strength Level for men at ${bw} kg body weight. They grade a one-rep max, so the app estimates yours from your best logged set: a set of 5 is about 89% of a max. Your sets of 5 aren't all-out, so your real max is probably a little higher.`;
+    }
+    const body = `
+      <div class="lv-hero">
+        <span class="lv-pill big${has && idx >= 0 ? '' : ' none'}">${has ? lvName(idx) : 'No data yet'}</span>
+        <p>${has ? who : ''}</p>
+      </div>
+      <div class="lv-big">${LV_SCALE}${lvBar(has ? r.lv.pos : 0)}${LV_KEY}</div>
+      <div class="tip-sec"><h3>${r.best || !isSwim ? 'Your best' : 'Your time'}</h3><p>${best}</p></div>
+      ${has ? `<div class="tip-sec"><h3>Next level</h3><p>${next}</p></div>` : ''}
+      <div class="tip-sec"><h3>${isSwim ? `Standards, ${ageTxt()}` : `Standards at ${bw} kg`}</h3>
+        <div class="lv-table-wrap"><table class="v-table static lv-table"><thead><tr>${head.map((h, i) => `<th scope="col"${i ? ' class="n"' : ''}>${h}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table></div>
+      </div>
+      <div class="tip-sec"><h3>How this works</h3><p>${how}</p>
+        <p class="lv-src"><a href="${src[1]}" target="_blank" rel="noopener">See the full standards on ${src[0]}</a></p>
+        <p><button class="link" type="button" data-act="you">${isSwim ? 'Set your age' : 'Change your body weight'}</button></p>
+      </div>`;
+    openSheet({
+      title: isSwim ? 'Swim level' : `${esc(r.name)} level`,
+      closeLabel: 'Close',
+      body,
+      mount: (el) => {
+        el.addEventListener('click', (e) => {
+          if (e.target.closest('[data-act="you"]')) { closeSheet(true); openSettings(); }
+        });
+      },
+    });
+  }
+
   /* ---------- swim ---------- */
   function viewSwim(t) {
     const ft = swimFocusTip();
@@ -2895,9 +3556,10 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
           <p class="goal-desc">${esc(goal.desc)}</p>
         </div>
       </section>
+      ${swimLevelHTML()}
       <section aria-labelledby="swimChartH">
         ${secHead('<span id="swimChartH">Progress</span>', `<span class="aside">${swimChartAside(goal)}</span>`)}
-        ${chartPanel(s, esc(best))}
+        ${chartPanel(s, esc(best), s.bands ? `<div class="legend">${bandKey(`Levels for ${ageTxt()}`)}</div>` : '')}
       </section>
       ${techniqueHTML()}
       <section aria-labelledby="swimHistH">
@@ -3157,13 +3819,16 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     else if (act === 'skip' && swipeCtl) swipeCtl.fly(-1);
     else if (act === 'start') openWorkout();
     else if (act === 'expand') openViewer(b.dataset.key, null, b.closest('.panel'));
-    else if (act === 'sel') { liftSel = b.dataset.key; render(); const nb = $(`.tile[data-key="${liftSel}"]`, main); if (nb) nb.focus({ preventScroll: true }); }
+    else if (act === 'chart') openViewer(b.dataset.key, null, b);
+    else if (act === 'goto') setTab(b.dataset.tab);
     else if (act === 'more-lifts') { showAllLifts = !showAllLifts; render(); }
     else if (act === 'more-swims') { showAllSwims = !showAllSwims; render(); }
     else if (act === 'edit-lift') editLift(b.dataset.id);
     else if (act === 'edit-swim') editSwim(b.dataset.id);
     else if (act === 'goal') openGoalSheet();
     else if (act === 'tip') openTipSheet(b.dataset.tip);
+    else if (act === 'level') openLevelSheet(b.dataset.key);
+    else if (act === 'you') openSettings();
     else if (act === 'day') { if (b.dataset.kind === 'morning') editMorningDay(b.dataset.date); else toggleDay(b.dataset.kind, b.dataset.date); }
     else if (act === 'expand-m') openMorningViewer(b.closest('.panel') || b);
     else if (act === 'cal-prev' || act === 'cal-next') {
@@ -3340,7 +4005,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
         else if (e.key === 'Tab') trapTab(e, woEl);
       });
     }
-    document.documentElement.classList.add('locked');
+    lockScroll('workout');
     setInert(true);
     audioUnlock();
     keepAwake();
@@ -3354,7 +4019,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     woTimer = null;
     releaseAwake();
     if (woEl) { woEl.remove(); woEl = null; }
-    document.documentElement.classList.remove('locked');
+    unlockScroll('workout');
     setInert(false);
   }
 
@@ -3691,7 +4356,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
         ${o.foot ? `<footer class="sheet-foot">${o.foot}</footer>` : ''}
       </section>`;
     document.body.appendChild(el);
-    document.documentElement.classList.add('locked');
+    lockScroll('sheet');
     const prevFocus = document.activeElement;
     sheet = { el, onCancel: o.onCancel, prevFocus };
     el.addEventListener('click', (e) => { if (e.target.closest('[data-close]')) closeSheet(); });
@@ -3710,7 +4375,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     const { el, onCancel, prevFocus } = sheet;
     sheet = null;
     el.classList.remove('open');
-    document.documentElement.classList.remove('locked');
+    unlockScroll('sheet');
     setTimeout(() => el.remove(), reduced ? 0 : 320);
     if (!silent && onCancel) onCancel();
     if (prevFocus && prevFocus.isConnected && prevFocus.focus) prevFocus.focus({ preventScroll: true });
@@ -4041,6 +4706,9 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     const chips = (name, sel) => [1, 2, 3, 4, 5, 6, 0].map((d) => `<button class="chip" type="button" data-${name}="${d}" aria-pressed="${sel.includes(d)}" aria-label="${PS.DAY_LONG[d]}">${PS.DAY[d]}</button>`).join('');
     const restRow = (key, label) => `<div class="rest-row"><span>${label}</span><div class="stepper sm"><button type="button" data-rest="${key}" data-d="-15" aria-label="${label} 15 seconds less">−</button><output id="rest-${key}">${restTxt(s.rest[key])}</output><button type="button" data-rest="${key}" data-d="15" aria-label="${label} 15 seconds more">+</button></div></div>`;
     const body = () => `
+      <div class="field you"><span class="lbl">You</span><p class="muted small">Used only to compare you with the strength and swim standards. Nothing is tracked over time.</p></div>
+      <div class="rest-row"><span>Body weight</span><div class="stepper"><button type="button" data-bw="-1" aria-label="Half a kilo less">−</button><input id="bwIn" inputmode="decimal" autocomplete="off" value="${PS.kg(s.bodyWeight)}" aria-label="Body weight in kilograms"><span class="unit">kg</span><button type="button" data-bw="1" aria-label="Half a kilo more">+</button></div></div>
+      <div class="rest-row"><span>Age <span class="muted small">for swim levels</span></span><div class="stepper"><button type="button" data-ag="-1" aria-label="One year less">−</button><input id="agIn" inputmode="numeric" autocomplete="off" value="${s.age || ''}" placeholder="Add" aria-label="Age in years"><span class="unit">yrs</span><button type="button" data-ag="1" aria-label="One year more">+</button></div></div>
       <div class="field"><span class="lbl" id="ldL">Lift days</span><div class="chips days" role="group" aria-labelledby="ldL">${chips('ld', s.liftDays)}</div><p class="muted small">Pick two. The first is Squat & Bench, the second is Deadlift & Press.</p></div>
       <div class="field"><span class="lbl" id="mdL">Morning run + bag</span><div class="chips days" role="group" aria-labelledby="mdL">${chips('md', s.morningDays)}</div></div>
       <div class="field"><span class="lbl" id="swL">Swim day</span><div class="chips days" role="group" aria-labelledby="swL">${chips('sd', [s.swimDay])}</div></div>
@@ -4074,6 +4742,21 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
           sb.scrollTop = y;
           render();
         };
+        el.addEventListener('input', (e) => {
+          if (e.target.id === 'bwIn') {
+            const v = num(e.target.value);
+            if (isFinite(v) && v >= 30 && v <= 200) { s.bodyWeight = Math.round(v * 10) / 10; save(); render(); }
+          } else if (e.target.id === 'agIn') {
+            const v = parseInt(e.target.value, 10);
+            if (e.target.value.trim() === '') { s.age = null; save(); render(); }
+            else if (isFinite(v) && v >= 15 && v <= 90) { s.age = v; save(); render(); }
+          }
+        });
+        // leaving a field with a value it can't use puts back the one in use
+        el.addEventListener('change', (e) => {
+          if (e.target.id === 'bwIn') e.target.value = PS.kg(s.bodyWeight);
+          else if (e.target.id === 'agIn') e.target.value = s.age || '';
+        });
         el.addEventListener('click', (e) => {
           const b = e.target.closest('button');
           if (!b) return;
@@ -4085,6 +4768,16 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
               save(); refresh();
               const nb = $(`[data-ld="${d}"]`, el); if (nb) nb.focus({ preventScroll: true });
             }
+          } else if (b.dataset.bw != null) {
+            const cur = num($('#bwIn', el).value);
+            s.bodyWeight = Math.max(30, Math.min(200, PS.roundTo((isFinite(cur) ? cur : s.bodyWeight) + Number(b.dataset.bw) * 0.5, 0.5)));
+            $('#bwIn', el).value = PS.kg(s.bodyWeight);
+            save(); render();
+          } else if (b.dataset.ag != null) {
+            const cur = parseInt($('#agIn', el).value, 10);
+            s.age = isFinite(cur) ? Math.max(15, Math.min(90, cur + Number(b.dataset.ag))) : 30;
+            $('#agIn', el).value = s.age;
+            save(); render();
           } else if (b.dataset.md != null) {
             const d = +b.dataset.md;
             const has = s.morningDays.includes(d);
