@@ -438,6 +438,23 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
 .seg button + button { border-left: 1px solid var(--line-2); }
 .seg button[aria-checked="true"] { background: var(--ink); color: var(--bg); }
 .seg.two { grid-template-columns: repeat(2, 1fr); }
+.seg.four { grid-template-columns: repeat(4, 1fr); }
+.seg.four button { font-size: 13px; }
+/* basketball patterns */
+.gp-panel { padding: 0 0 14px; overflow: hidden; display: grid; gap: 10px; }
+.gp-panel > p { padding: 0 16px; }
+.gp-table { table-layout: fixed; }
+.gp-table th, .gp-table td { padding: 10px 4px; }
+.gp-table th:first-child, .gp-table td:first-child { padding-left: 14px; width: 46%; }
+.gp-table th:last-child, .gp-table td:last-child { padding-right: 14px; }
+.gp-table th { font-size: 10.5px; letter-spacing: 0.06em; }
+.gp-table td { white-space: normal; font-size: 13.5px; }
+.gp-table td.n { color: var(--ink-3); white-space: nowrap; }
+.gp-table td.n b { color: var(--ink); }
+.gp-table tr.all td { font-weight: 700; }
+.gp-table tr.grp td { border-top: 1px solid var(--line-2); }
+.gp-table td .muted { font-weight: 400; }
+.gp-note { font-size: 12px; }
 .effort-desc { font-size: 13px; color: var(--ink-3); }
 .next-prev {
   display: flex; justify-content: space-between; gap: 10px; align-items: baseline;
@@ -1519,6 +1536,41 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     };
   }
 
+  /* ---------- game-day patterns ----------
+     Each game can carry how it went (energy, cramp, reflux) and what you ate
+     and drank. Patterns compare how often each problem came up with and
+     without each habit. A handful of games is a hint, not proof. */
+  const GAME_ISSUES = [
+    { id: 'cramp', name: 'Cramp', has: (g) => g.cramp === true, known: (g) => typeof g.cramp === 'boolean' },
+    { id: 'tired', name: 'Tired easily', has: (g) => g.energy === 'tired', known: (g) => !!g.energy },
+    { id: 'reflux', name: 'Reflux', has: (g) => g.reflux === 'mild' || g.reflux === 'bad', known: (g) => !!g.reflux },
+  ];
+  const GAME_FACTORS = [
+    { id: 'electrolytes', with: 'Electrolytes', without: 'No electrolytes', has: (g) => (g.extras || []).includes('electrolytes'), known: (g) => Array.isArray(g.extras) },
+    { id: 'banana', with: 'Banana', without: 'No banana', has: (g) => (g.extras || []).includes('banana'), known: (g) => Array.isArray(g.extras) },
+    { id: 'early', with: 'Ate 2 h+ before', without: 'Ate under 2 h before', has: (g) => g.mealWhen === '2-3' || g.mealWhen === '3+', known: (g) => !!g.mealWhen },
+    { id: 'big', with: 'Big meal', without: 'Light or normal meal', has: (g) => g.mealSize === 'big', known: (g) => !!g.mealSize },
+  ];
+  function gamePatterns(state) {
+    const games = state.ball.filter((e) => e.status === 'done' && e.d).sort(byDate).map((e) => e.d);
+    const count = (list, iss) => {
+      const k = list.filter(iss.known);
+      return { n: k.length, hit: k.filter(iss.has).length };
+    };
+    return {
+      n: games.length,
+      issues: GAME_ISSUES.map((iss) => Object.assign({ id: iss.id, name: iss.name }, count(games, iss))),
+      factors: GAME_FACTORS.map((f) => {
+        const known = games.filter(f.known);
+        const yes = known.filter(f.has), no = known.filter((g) => !f.has(g));
+        return {
+          id: f.id, with: f.with, without: f.without, nWith: yes.length, nWithout: no.length,
+          rows: GAME_ISSUES.map((iss) => ({ id: iss.id, with: count(yes, iss), without: count(no, iss) })),
+        };
+      }).filter((f) => f.nWith > 0 && f.nWithout > 0),
+    };
+  }
+
   /* ---------- the week at a glance ----------
      Weeks start on the same day as the mornings grid (Sunday for a Sunday to
      Thursday plan). Each activity counts what was done against what was planned,
@@ -1615,7 +1667,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     SWIM_GOALS, DRILLS, swimPace, swimsDone, swimPlan, swimProgress,
     LEVELS, LEVEL_PCT, REP_PCT, BREAST_FACTOR, strengthStandards, swimStandards, est1RM, bestMax, bestPull, levelOf,
     isMorningDay, morningWeekStart, morningDue, morningRuns, runPace, morningStats, morningMonths, morningWeekdays, morningGrid,
-    ballStats, WEEK_KINDS, weekView, weekList, seed,
+    ballStats, GAME_ISSUES, gamePatterns, WEEK_KINDS, weekView, weekList, seed,
   };
 })(typeof window !== 'undefined' ? window : globalThis);
 
@@ -2195,7 +2247,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
       skip: () => skipWeekly('swims'),
     },
     ball: {
-      done: () => logGame(),
+      done: () => { const t = T(); const due = ballDue(t); openGameSheet({ date: due.due <= t ? due.due : t }); },
       skip: () => skipWeekly('ball'),
     },
   };
@@ -3693,7 +3745,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     const card = `<article class="card${animateCard ? ' enter' : ''}" tabindex="0" aria-label="Basketball, ${esc(w.text)}. Swipe right if you played, left if you sat it out.">
         <div class="card-top"><span class="when">${esc(w.text)}</span>${due.late ? '<span class="pill solid">Log it</span>' : ''}</div>
         <h3>Basketball</h3>
-        <div class="rows"><div class="row"><span class="name">Played?</span><span class="val word">✓</span><span class="meta">Swipe right to check it off. That's all it takes.</span></div></div>
+        <div class="rows"><div class="row"><span class="name">Played?</span><span class="val word">✓</span><span class="meta">Swipe right, then note how it went and what you ate.</span></div></div>
         <div class="fuel" aria-label="Game-day fuel">
           <div><b>2.5–3 h before</b><span>Biggest meal of the day. Carb-forward, light on fat.</span></div>
           <div><b>30–45 min before</b><span>A banana or a few dates if you need a top-up.</span></div>
@@ -3712,7 +3764,145 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
           <div class="stat"><div class="v">${st.streak}</div><div class="l">Week streak</div></div>
         </div>
       </section>
+      ${gamePatternsHTML()}
+      ${gamesHTML()}
       <section aria-labelledby="calH">${calendarHTML(t, 'ball')}</section>`;
+  }
+
+  /* ---------- game details: how it went and what you ate ---------- */
+  const ENERGY = [['good', 'Good'], ['ok', 'OK'], ['tired', 'Tired easily']];
+  const REFLUX = [['none', 'None'], ['mild', 'Mild'], ['bad', 'Bad']];
+  const MEAL_WHEN = [['<1', 'Under 1 h'], ['1-2', '1–2 h'], ['2-3', '2–3 h'], ['3+', '3 h+']];
+  const MEAL_SIZE = [['light', 'Light'], ['normal', 'Normal'], ['big', 'Big']];
+  const EXTRAS = [['electrolytes', 'Electrolytes'], ['banana', 'Banana'], ['dates', 'Dates'], ['water', 'Water'], ['sports', 'Sports drink'], ['coffee', 'Coffee']];
+  const CRAMP_AT = [['calves', 'Calves'], ['hamstrings', 'Hamstrings'], ['quads', 'Quads'], ['feet', 'Feet'], ['other', 'Other']];
+  const word = (list, v) => { const x = list.find((y) => y[0] === v); return x ? x[1] : ''; };
+
+  /* One line about a game, e.g. "Tired easily · Cramp (calves) · Ate 1–2 h before, big". */
+  function gameLine(d) {
+    if (!d) return 'No details';
+    const out = [];
+    if (d.energy) out.push(d.energy === 'good' ? 'Felt good' : d.energy === 'ok' ? 'Energy OK' : 'Tired easily');
+    if (d.cramp === true) out.push(`Cramp${d.crampAt && d.crampAt.length ? ` (${d.crampAt.map((c) => word(CRAMP_AT, c).toLowerCase()).join(', ')})` : ''}`);
+    if (d.reflux === 'mild' || d.reflux === 'bad') out.push(`${d.reflux === 'bad' ? 'Bad' : 'Mild'} reflux`);
+    if (d.mealWhen || d.mealSize) out.push(`Ate ${[d.mealWhen ? `${word(MEAL_WHEN, d.mealWhen).toLowerCase()} before` : '', d.mealSize ? word(MEAL_SIZE, d.mealSize).toLowerCase() : ''].filter(Boolean).join(', ')}`);
+    if (d.extras && d.extras.length) out.push(d.extras.map((x) => word(EXTRAS, x)).join(', '));
+    return out.length ? out.join(' · ') : 'No details';
+  }
+
+  function gamesHTML() {
+    const games = state.ball.filter((e) => e.status === 'done').sort(PS.byDate).reverse().slice(0, 6);
+    if (!games.length) return '';
+    const rows = games.map((e) => `<button class="item" type="button" data-act="game" data-id="${esc(e.id)}">${dateBlock(e.date)}<span class="what"><span class="t">${e.d ? esc(gameLine(e.d).split(' · ')[0]) : 'Game'}</span><span class="s">${esc(e.d ? gameLine(e.d).split(' · ').slice(1).join(' · ') || 'Nothing else noted' : 'Tap to add how it went')}</span>${e.d && (e.d.meal || e.d.note) ? `<span class="n">${esc([e.d.meal, e.d.note].filter(Boolean).join(' · '))}</span>` : ''}</span>${chev}</button>`).join('');
+    return `<section aria-labelledby="gamesH">
+        ${secHead('<span id="gamesH">Games</span>', '<span class="aside">Tap to edit</span>')}
+        <div class="list">${rows}</div>
+      </section>`;
+  }
+
+  /* Problems with and without each habit, once there are a few games with details. */
+  function gamePatternsHTML() {
+    const p = PS.gamePatterns(state);
+    if (!p.n) return '';
+    const need = 3;
+    const cnt = (c) => (c.n ? `<b>${c.hit}</b>/${c.n}` : '–');
+    const head = `<tr><th scope="col">Games</th>${PS.GAME_ISSUES.map((x) => `<th scope="col" class="n">${x.name === 'Tired easily' ? 'Tired' : x.name}</th>`).join('')}</tr>`;
+    const allRow = `<tr class="all"><td>All ${p.n}</td>${p.issues.map((x) => `<td class="n">${cnt(x)}</td>`).join('')}</tr>`;
+    const fRows = p.factors.map((f) => `
+        <tr class="grp"><td>${esc(f.with)} <span class="muted">(${f.nWith})</span></td>${f.rows.map((r) => `<td class="n">${cnt(r.with)}</td>`).join('')}</tr>
+        <tr><td>${esc(f.without)} <span class="muted">(${f.nWithout})</span></td>${f.rows.map((r) => `<td class="n">${cnt(r.without)}</td>`).join('')}</tr>`).join('');
+    const body = p.n < need
+      ? `<p class="small muted">Log ${need - p.n} more ${need - p.n === 1 ? 'game' : 'games'} with details and this will compare games with and without electrolytes, a banana, eating early and a big meal.</p>`
+      : `${p.factors.length ? '' : '<p class="small muted">Comparisons show up once some games had a habit and some didn\'t.</p>'}`;
+    return `<section aria-labelledby="patH">
+        ${secHead('<span id="patH">Patterns</span>', `<span class="aside">${plural(p.n, 'game')} with details</span>`)}
+        <div class="panel gp-panel">
+          <table class="v-table static gp-table"><caption class="sr">How often each problem came up</caption><thead>${head}</thead><tbody>${allRow}${p.n >= need ? fRows : ''}</tbody></table>
+          ${body}
+          <p class="small muted gp-note">Read it as "games with a problem / games". With only a few games, treat it as a hint, not proof.</p>
+        </div>
+      </section>`;
+  }
+
+  function openGameSheet({ date, entry }) {
+    const t = T();
+    const isNew = !entry;
+    const d0 = (entry && entry.d) || {};
+    const m = {
+      date: entry ? entry.date : date,
+      energy: d0.energy || null, cramp: typeof d0.cramp === 'boolean' ? d0.cramp : null, crampAt: (d0.crampAt || []).slice(),
+      reflux: d0.reflux || null, mealWhen: d0.mealWhen || null, mealSize: d0.mealSize || null,
+      extras: (d0.extras || []).slice(),
+    };
+    const seg = (key, list, label) => `<div class="seg${list.length === 2 ? ' two' : list.length === 4 ? ' four' : ''}" role="radiogroup" aria-label="${label}">${list.map(([v, w]) => `<button type="button" role="radio" data-g="${key}" data-v="${v}" aria-checked="${String(m[key]) === v}">${w}</button>`).join('')}</div>`;
+    const chips = (key, list) => `<div class="chips">${list.map(([v, w]) => `<button class="chip" type="button" data-gm="${key}" data-v="${v}" aria-pressed="${m[key].includes(v)}">${w}</button>`).join('')}</div>`;
+    const body = `
+      <div class="field inline"><label class="lbl" for="gDate">Date</label><input class="inp" type="date" id="gDate" value="${m.date}" max="${t}"></div>
+      <div class="block">
+        <div class="block-head"><h3>How it went</h3></div>
+        <div class="field"><span class="lbl">Energy</span>${seg('energy', ENERGY, 'Energy')}</div>
+        <div class="field"><span class="lbl">Cramp</span>${seg('cramp', [['false', 'No'], ['true', 'Yes']], 'Cramp')}
+          <div id="gCrampAt"${m.cramp ? '' : ' hidden'}>${chips('crampAt', CRAMP_AT)}</div></div>
+        <div class="field"><span class="lbl">Reflux from food</span>${seg('reflux', REFLUX, 'Reflux')}</div>
+      </div>
+      <div class="block">
+        <div class="block-head"><h3>Food</h3></div>
+        <div class="field"><span class="lbl">Last meal before the game</span>${seg('mealWhen', MEAL_WHEN, 'When you ate')}</div>
+        <div class="field"><span class="lbl">How much</span>${seg('mealSize', MEAL_SIZE, 'How much you ate')}</div>
+        <div class="field"><label class="lbl" for="gMeal">What you ate</label><input class="inp" id="gMeal" maxlength="120" placeholder="e.g. chicken, rice, salad" value="${esc(d0.meal || '')}"></div>
+        <div class="field"><span class="lbl">Before or during the game</span>${chips('extras', EXTRAS)}</div>
+      </div>
+      <div class="field"><label class="lbl" for="gNote">Note</label><input class="inp" id="gNote" maxlength="160" placeholder="Optional" value="${esc(d0.note || '')}"></div>
+      ${entry ? '<button class="btn danger" type="button" data-del>Delete this game</button>' : ''}`;
+    openSheet({
+      title: isNew ? 'Log game' : `Game ${PS.shortDate(entry.date)}`,
+      body,
+      foot: `<button class="btn solid" type="button" data-save>${isNew ? 'Save game' : 'Save changes'}</button>`,
+      onCancel: () => { if (isNew) { animateCard = true; render(); } },
+      mount: (el) => {
+        el.addEventListener('click', (e) => {
+          const b = e.target.closest('button');
+          if (!b) return;
+          if (b.dataset.g) {
+            const k = b.dataset.g;
+            const v = k === 'cramp' ? b.dataset.v === 'true' : b.dataset.v;
+            m[k] = m[k] === v ? null : v;   // tap again to clear
+            $$(`[data-g="${k}"]`, el).forEach((x) => x.setAttribute('aria-checked', String(String(m[k]) === x.dataset.v)));
+            if (k === 'cramp') $('#gCrampAt', el).hidden = m.cramp !== true;
+          } else if (b.dataset.gm) {
+            const arr = m[b.dataset.gm], v = b.dataset.v, i = arr.indexOf(v);
+            if (i >= 0) arr.splice(i, 1); else arr.push(v);
+            b.setAttribute('aria-pressed', String(i < 0));
+          } else if (b.hasAttribute('data-del')) {
+            if (!b.classList.contains('armed')) { b.classList.add('armed'); b.textContent = 'Tap again to delete'; return; }
+            state.ball = state.ball.filter((x) => x !== entry);
+            save(); closeSheet(true); render(); toast('Game deleted.');
+          } else if (b.hasAttribute('data-save')) {
+            const dv = $('#gDate', el).value || t;
+            const day = dv > t ? t : dv;
+            const d = {};
+            ['energy', 'reflux', 'mealWhen', 'mealSize'].forEach((k) => { if (m[k]) d[k] = m[k]; });
+            if (m.cramp != null) d.cramp = m.cramp;
+            if (m.cramp && m.crampAt.length) d.crampAt = m.crampAt;
+            d.extras = m.extras;
+            const meal = $('#gMeal', el).value.trim(), note = $('#gNote', el).value.trim();
+            if (meal) d.meal = meal;
+            if (note) d.note = note;
+            const before = JSON.parse(JSON.stringify(state.ball));
+            state.ball = state.ball.filter((x) => x !== entry && x.date !== day);
+            const any = Object.keys(d).some((k) => k !== 'extras') || d.extras.length;
+            state.ball.push(Object.assign({ id: entry ? entry.id : uid(), date: day, status: 'done' }, any ? { d } : {}));
+            calMonth = day.slice(0, 7);
+            save();
+            closeSheet(true);
+            animateCard = isNew;
+            render();
+            if (isNew) toast(`Game logged for ${PS.DAY_LONG[PS.dow(day)]}.`, () => { state.ball = before; save(); render(); });
+            else toast('Changes saved.');
+          }
+        });
+      },
+    });
   }
 
   function calendarHTML(t, kind) {
@@ -3781,30 +3971,6 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     });
   }
 
-  function logGame() {
-    const t = T();
-    const due = ballDue(t);
-    const e = { id: uid(), date: due.due <= t ? due.due : t, status: 'done' };
-    state.ball.push(e);
-    calMonth = e.date.slice(0, 7);
-    save();
-    animateCard = true;
-    render();
-    toast(`Game logged for ${PS.DAY_LONG[PS.dow(e.date)]}.`, () => { state.ball = state.ball.filter((x) => x.id !== e.id); save(); render(); });
-  }
-
-  function toggleDay(kind, date) {
-    const arr = state[kind === 'morning' ? 'mornings' : 'ball'];
-    const i = arr.findIndex((e) => e.date === date);
-    if (i >= 0 && arr[i].status === 'done') arr.splice(i, 1);
-    else if (i >= 0) arr[i].status = 'done';
-    else arr.push({ id: uid(), date, status: 'done' });
-    save();
-    render();
-    const btn = $(`.day[data-date="${date}"]`, main);
-    if (btn) btn.focus({ preventScroll: true });
-  }
-
   function savedToast(e) {
     const n2 = PS.nextLift(state, T());
     const next = PS.SESSIONS[n2.type].lifts.map((k) => `${PS.LIFTS[k].short} ${PS.kg(PS.liftPlan(state, k, n2.due).w)}`).join(' · ');
@@ -3829,7 +3995,8 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     else if (act === 'tip') openTipSheet(b.dataset.tip);
     else if (act === 'level') openLevelSheet(b.dataset.key);
     else if (act === 'you') openSettings();
-    else if (act === 'day') { if (b.dataset.kind === 'morning') editMorningDay(b.dataset.date); else toggleDay(b.dataset.kind, b.dataset.date); }
+    else if (act === 'day') { if (b.dataset.kind === 'morning') editMorningDay(b.dataset.date); else { const g = state.ball.find((x) => x.date === b.dataset.date && x.status === 'done'); openGameSheet(g ? { entry: g } : { date: b.dataset.date }); } }
+    else if (act === 'game') { const g = state.ball.find((x) => x.id === b.dataset.id); if (g) openGameSheet({ entry: g }); }
     else if (act === 'expand-m') openMorningViewer(b.closest('.panel') || b);
     else if (act === 'cal-prev' || act === 'cal-next') {
       const isM = b.dataset.kind === 'morning';

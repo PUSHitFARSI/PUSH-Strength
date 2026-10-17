@@ -30,7 +30,7 @@ It works offline after the first open.
   - The shaded bands behind the line are the levels, Beginner to Elite. On the lift charts they're shown as the weight for a set of 5 at your body weight, so you can see how close the next level is. The pull-ups chart shows your best set each session, and the swim chart shades the 1 km levels.
 - **Mornings**: swipe right after your 5:30 session, check the run distance and time (filled in from last time) and whether you did the punching bag, then tap **Save morning**. Swipe left to skip. Your days off (Friday and Saturday) don't break your streak. Tap a day in the calendar to log or edit it. Tap the grid to see every week and month, and the run chart to see every run.
 - **Swim**: swipe right after a swim and enter distance and time. Change your goal under **Goal**. **Level** compares your 1 km time with other swimmers (from swimminglevel.com, adjusted for breaststroke). Under **Technique**, tap any step or tip for the details, common mistakes and a drill. Tap **Make it my next swim's focus** to put that drill on your next swim card.
-- **Basketball**: swipe right to check off the game. Tap any day in the calendar to add or remove one.
+- **Basketball**: swipe right after a game, then note how it went (energy, cramp, reflux) and what you ate: when, how much, what, and electrolytes, banana and so on. Everything is optional. **Patterns** compares games with and without each habit once you have 3 games with details. Tap a game or a day in the calendar to edit or delete it.
 - **Settings** (gear icon): set your body weight and age for the levels, change lift, morning, swim and game days, set rest times, turn the beep on or off, copy a backup, or restore one.
 
 ## Your data
