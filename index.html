@@ -509,6 +509,31 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
 .toast button { font-weight: 800; text-decoration: underline; text-underline-offset: 3px; padding: 6px 2px; }
 
 
+/* ---------- front crawl ---------- */
+.crawl-panel { display: grid; gap: 0; }
+.cr-steps { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 4px; margin: 14px 0 8px; }
+.cr-steps i { height: 10px; border-radius: 99px; background: var(--raised); }
+.cr-steps i.done { background: var(--ink-3); }
+.cr-steps i.cur { background: var(--ink); }
+.crawl-panel + .chart-panel { margin-top: 12px; }
+.cr-on { flex: 0 0 auto; min-width: 196px; }
+.cr-pick .chip { min-width: 0; padding: 0 9px; font-size: 12.5px; }
+.cr-pick .chip[aria-checked="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+/* ---------- bonus sessions ---------- */
+.bonus-btn {
+  width: 100%; height: 46px; margin-top: 10px; border-radius: 999px;
+  border: 1.5px dashed var(--line-2); color: var(--ink-2);
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  font-size: 14.5px; font-weight: 700;
+}
+.bonus-btn span { font-size: 18px; line-height: 1; }
+.bonus-btn:active { background: var(--raised); }
+.what .t .tag {
+  display: inline-block; margin-left: 6px; padding: 0 7px; border-radius: 99px; border: 1px solid var(--ink-3);
+  font-size: 10px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; vertical-align: 2px; color: var(--ink-2);
+}
+
 /* ---------- start workout (inside the white card) ---------- */
 .start-btn {
   margin-top: 14px; width: 100%; height: 56px; border-radius: 14px;
@@ -862,6 +887,28 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
 .ring-time { font-size: clamp(54px, 16vw, 78px); font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
 .ring-lbl { margin-top: 8px; font-size: 12px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-3); }
 .wo-rest.has-feel { gap: 10px; }
+.wo-rest.has-load .ring { width: min(48vw, 27vh, 210px); }
+.wo-rest.has-load .ring-time { font-size: clamp(44px, 12vw, 62px); }
+.wo-rest.has-load.has-feel { gap: 8px; }
+.wo-rest.has-load.has-feel .ring { width: min(38vw, 20vh, 160px); }
+.wo-rest.has-load.has-feel .ring-time { font-size: clamp(36px, 10vw, 48px); }
+.wo-load {
+  width: 100%; box-sizing: border-box; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center;
+  column-gap: 14px; row-gap: 2px; text-align: left;
+  background: var(--paper); color: var(--paper-ink); border-radius: 16px; padding: 10px 14px 11px;
+}
+.wl-top { grid-column: 1 / -1; display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.wl-lbl { font-size: 12px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; }
+.wl-kg { font-size: 26px; font-weight: 800; line-height: 1.1; }
+.wl-kg small { font-size: 14px; margin-left: 2px; }
+.b-pic { grid-row: 2 / span 2; display: block; }
+.b-sleeve { fill: var(--paper-line); }
+.b-stop { fill: var(--paper-ink-2); }
+.b-plate { fill: var(--paper-ink); }
+.b-plate.keep { fill: var(--paper-ink-2); opacity: 0.45; }
+.wl-each { font-size: 17px; font-weight: 800; line-height: 1.25; }
+.wl-change { font-size: 13.5px; font-weight: 600; color: var(--paper-ink-2); line-height: 1.3; }
+.wo-load.no-pic { grid-template-columns: minmax(0, 1fr); }
 .wo-rest.has-feel .ring { width: min(46vw, 25vh, 200px); }
 .wo-rest.has-feel .ring-time { font-size: clamp(42px, 12vw, 58px); }
 .wo-adjrow { display: flex; gap: 10px; }
@@ -908,8 +955,9 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
   .wo-info, .wo-act { display: flex; flex-direction: column; align-items: center; gap: 8px; flex: 1 1 0; min-width: 0; }
   .wo-lift { font-size: clamp(28px, 9vh, 44px); }
   .wo-big { font-size: clamp(42px, 15vh, 66px); }
-  .ring, .wo-rest.has-feel .ring { width: min(36vw, 46vh, 210px); }
-  .ring-time, .wo-rest.has-feel .ring-time { font-size: clamp(40px, 13vh, 58px); }
+  .ring, .wo-rest.has-feel .ring, .wo-rest.has-load .ring, .wo-rest.has-load.has-feel .ring { width: min(36vw, 46vh, 210px); }
+  .ring-time, .wo-rest.has-feel .ring-time, .wo-rest.has-load .ring-time, .wo-rest.has-load.has-feel .ring-time { font-size: clamp(40px, 13vh, 58px); }
+  .wo-load { padding: 8px 12px 9px; }
   .wo-go { height: 56px; font-size: 25px; margin-top: 0; }
   .fin-time { font-size: clamp(44px, 15vh, 66px); }
   .fin-list li { padding: 7px 0; }
@@ -1210,7 +1258,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     const w = win == null ? 2 : win;
     const back = (dow(t) - day + 7) % 7;
     const recent = addDays(t, -back);
-    const handled = (d) => entries.some((e) => Math.abs(diff(d, e.date)) <= w);
+    const handled = (d) => entries.some((e) => !e.bonus && Math.abs(diff(d, e.date)) <= w);
     if (back <= 2 && !handled(recent)) return { due: recent, late: back };
     let next = addDays(recent, 7);
     if (handled(next)) next = addDays(next, 7);
@@ -1221,7 +1269,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
   function liftDayTip(state) {
     const s = state.settings;
     const recent = state.lifts
-      .filter((e) => e.status === 'done' && e.date >= s.since)
+      .filter((e) => e.status === 'done' && !e.bonus && e.date >= s.since)
       .sort(byDate)
       .slice(-4);
     if (recent.length < 4) return null;
@@ -1312,6 +1360,39 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     const distPct = clamp((best - base.dist) / (goal.dist - base.dist));
     const pacePct = bestPace ? clamp((basePace - bestPace) / (basePace - goal.pace)) : 0;
     return { pct: (distPct + pacePct) / 2, from: `${base.dist} m`, now: bestPace ? `${best} m · ${mmss(bestPace)}` : `${best} m`, to: '1500 m · 2:20', nowLabel: 'Best' };
+  }
+
+  /* ---------- learning front crawl ----------
+     Short repeats with rest, one step at a time, from 25 m repeats to 400 m without stopping.
+     After a set where every rep was done and it didn't feel hard, the next swim moves up a step. */
+  const CRAWL_STEPS = [
+    { reps: 8, dist: 25, rest: 30 },
+    { reps: 10, dist: 25, rest: 20 },
+    { reps: 6, dist: 50, rest: 40 },
+    { reps: 8, dist: 50, rest: 30 },
+    { reps: 4, dist: 100, rest: 45 },
+    { reps: 5, dist: 100, rest: 30 },
+    { reps: 3, dist: 150, rest: 45 },
+    { reps: 2, dist: 200, rest: 60 },
+    { reps: 2, dist: 300, rest: 60 },
+    { reps: 1, dist: 400, rest: 0 },
+  ];
+  const crawlSetTxt = (c) => (c.reps > 1 ? `${c.reps} × ${c.dist} m` : `${c.dist} m`);
+  const crawlLog = (state) => state.swims.filter((e) => e.status === 'done' && e.crawl && e.crawl.done > 0).sort(byDate);
+  /* Where a logged set leads next time. */
+  function crawlNext(c) {
+    const top = CRAWL_STEPS.length - 1;
+    const s0 = Math.max(0, Math.min(top, c.step || 0));
+    const full = c.done >= (c.reps || CRAWL_STEPS[s0].reps);
+    if (full && c.feel !== 'hard') return { step: Math.min(top, s0 + 1), why: s0 === top ? 'You can swim 400 m without stopping. Keep it up, or swim it a little faster' : 'Last set went well, so up a step' };
+    return { step: s0, why: full ? 'Last set felt hard, so repeat it' : 'Repeat it until you finish every one' };
+  }
+  function crawlPlan(state) {
+    const log = crawlLog(state);
+    const best = log.reduce((m, e) => Math.max(m, e.crawl.longest || 0), 0);
+    const last = log.length ? log[log.length - 1].crawl : null;
+    const nx = last ? crawlNext(last) : { step: 0, why: 'Start here: short swims with plenty of rest' };
+    return Object.assign({ step: nx.step, of: CRAWL_STEPS.length, why: nx.why, best, last, n: log.length }, CRAWL_STEPS[nx.step]);
   }
 
   /* ---------- 5:30 mornings (run + bag) ----------
@@ -1609,7 +1690,8 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
         days.push({ d, st });
       }
       const done = ents.filter((e) => e.status === 'done').length;
-      out.kinds[kind] = { tracked, planned, done, skipped: ents.filter((e) => e.status === 'skipped').length, days };
+      const bonus = ents.filter((e) => e.status === 'done' && e.bonus).length;
+      out.kinds[kind] = { tracked, planned, done, bonus, skipped: ents.filter((e) => e.status === 'skipped').length, days };
       if (tracked) { out.done += Math.min(done, planned); out.planned += planned; }
     });
     return out;
@@ -1633,7 +1715,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
       settings: {
         liftDays: [1, 3], swimDay: 4, ballDay: 5, swimGoal: 'faster1k',
         swimBase: { dist: 1000, time: 1500 }, since: '2026-10-11', tipOff: null,
-        rest: { work: 150, pull: 120, warm: 60 }, sound: true,
+        rest: { work: 150, pull: 120, warm: 60 }, sound: true, crawl: true,
         morningDays: [0, 1, 2, 3, 4], morningSince: null,
         bodyWeight: 72, age: null,
       },
@@ -1665,6 +1747,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     liftHistory, liftPlan, pullHistory, pullPlan,
     isLiftDay, slotType, nextLift, liftNotes, nextWeekly, liftDayTip,
     SWIM_GOALS, DRILLS, swimPace, swimsDone, swimPlan, swimProgress,
+    CRAWL_STEPS, crawlSetTxt, crawlLog, crawlNext, crawlPlan,
     LEVELS, LEVEL_PCT, REP_PCT, BREAST_FACTOR, strengthStandards, swimStandards, est1RM, bestMax, bestPull, levelOf,
     isMorningDay, morningWeekStart, morningDue, morningRuns, runPace, morningStats, morningMonths, morningWeekdays, morningGrid,
     ballStats, GAME_ISSUES, gamePatterns, WEEK_KINDS, weekView, weekList, seed,
@@ -1914,6 +1997,131 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
       note: 'Some extra phlegm after swimming is common. If it lasts long after you are out of the pool or keeps getting worse, check with a doctor.',
     },
   ];
+  /* Front crawl: getting past 25 m. Shown in the crawl section, not under Technique. */
+  root.PS_TIPS.push(
+    {
+      id: 'cr-exhale', group: 'crawl', name: 'Breathe out the whole time', short: 'Breathe out',
+      icon: '<circle cx="8" cy="15" r="3.2"/><circle cx="15.5" cy="8.5" r="2.2"/><circle cx="17" cy="16" r="1.6"/>',
+      cue: 'Hum a steady stream of bubbles whenever your face is in the water.',
+      why: 'Running out of air at 25 m is rarely about fitness. Holding your breath lets carbon dioxide build up, and that is the feeling that makes you stop. Breathe out under water and the breath in becomes quick and easy.',
+      how: [
+        'Start breathing out through your nose and mouth as soon as your face goes back in.',
+        'Keep the bubbles going, gently, the whole time you look down.',
+        'Blow out the last bit just before you turn to breathe, so your lungs are ready for air.',
+        'Take a quick breath in through your mouth and turn back down.',
+      ],
+      feel: 'You turn with empty lungs and take an easy, full breath. No gasping.',
+      mistakes: [
+        ['Holding your breath, then trying to breathe out and in at the side', 'There isn\'t time for both. Have the air out before your mouth clears the water.'],
+        ['Water up your nose', 'Hum out through your nose while your face is down.'],
+      ],
+      drill: {
+        name: 'Bubbles at the wall',
+        short: 'Hold the wall, face in, hum out, turn to breathe in. 20 times before your crawl set.',
+        how: 'Hold the wall with both hands and put your face in. Hum out until your lungs are nearly empty, turn your head to the side and breathe in, then put your face back in. Do it 20 times, slowly, before your crawl set.',
+      },
+    },
+    {
+      id: 'cr-slow', group: 'crawl', name: 'Slow right down', short: 'Slow down',
+      icon: '<path d="M4 17a8 8 0 0 1 16 0"/><path d="M12 17l-3.5-4.5"/>',
+      cue: 'Swim at a pace you could keep all day, with long, easy strokes.',
+      why: 'Most people push off hard and sprint the first 10 metres, then run out of air. Swimming slower uses far less oxygen, and your stroke gets better as well.',
+      how: [
+        'Push off gently, not hard.',
+        'Make each stroke long: reach forward and let your hand rest out in front for a moment before you pull.',
+        'Swim so slowly that it feels almost too easy.',
+        'If you are gasping at the wall, swim the next one slower.',
+      ],
+      feel: 'You reach the wall wanting to keep going.',
+      mistakes: [
+        ['Racing the first few strokes', 'Make the first one of the set your slowest.'],
+        ['Short, choppy strokes', 'Reach further forward and push each pull back past your hip.'],
+      ],
+      drill: {
+        name: 'Catch-up',
+        short: 'One hand waits in front until the other arrives. It slows you down and gives you time to breathe.',
+        how: 'Swim 4 × 25 m where each hand waits stretched out in front until the other hand touches it, then pulls. It slows your stroke and gives you more time to breathe.',
+      },
+    },
+    {
+      id: 'cr-two', group: 'crawl', name: 'Breathe every 2 strokes', short: 'Every 2 strokes',
+      icon: '<path d="M12 3v3"/><path d="M6 21h12L14.5 7h-5L6 21z"/><path d="M12 16l4-6"/>',
+      cue: 'Breathe to your easier side on every second stroke while you build up.',
+      why: 'Breathing every 3 strokes is good for balance, but it gives you less air. While you are learning, more air means longer swims. Breathing to both sides can come later.',
+      how: [
+        'Pick the side that feels easier.',
+        'Count "one, two, breathe" and breathe as that arm pulls back past your hip.',
+        'Take your first breath on your first stroke after the push-off, before you need it.',
+        'Keep the same rhythm on every length.',
+      ],
+      feel: 'A steady rhythm you could keep going.',
+      mistakes: [
+        ['Waiting until you need air', 'Breathe early and often. Once you feel short of air, it is too late to catch up.'],
+      ],
+      extra: 'Once 100 m feels easy, try a few lengths breathing every 3 strokes.',
+      drill: {
+        name: 'One, two, breathe',
+        short: 'Swim easy lengths counting "one, two, breathe", starting from the first stroke.',
+        how: 'Swim 4 × 25 m at an easy pace, saying "one, two, breathe" in your head. Breathe on every second stroke, starting with the first one after the push-off.',
+      },
+    },
+    {
+      id: 'cr-turn', group: 'crawl', name: 'Turn your head, don\'t lift it', short: 'Turn, don\'t lift',
+      icon: '<path d="M19.5 12a7.5 7.5 0 1 1-2.6-5.7"/><path d="M19.5 4.5v4h-4"/>',
+      cue: 'Roll your head with your body and keep one goggle in the water.',
+      why: 'Lifting your head to breathe sinks your hips and legs, so you swim uphill and tire fast. Turning keeps you flat.',
+      how: [
+        'Look at the bottom of the pool between breaths.',
+        'As the arm on your breathing side pulls back, let your body roll and turn your head with it.',
+        'Breathe in with one goggle still in the water. There is a small dip in the water beside your head to breathe in.',
+        'Turn your face back down as that arm swings forward.',
+      ],
+      feel: 'Your cheek stays on the water and your body stays long.',
+      mistakes: [
+        ['Looking forward or up to breathe', 'Look to the side, or even slightly back.'],
+        ['Turning late, after the arm has passed', 'Start turning as the arm pulls, not after.'],
+      ],
+      drill: {
+        name: 'Side kick',
+        short: 'Kick on your side with your bottom arm stretched forward. Turn your face up to breathe, then back down.',
+        how: 'Kick on your side with your bottom arm stretched forward and your top arm by your side. Keep your face down, then turn just your head to breathe and back. Use fins if your legs sink. 4 × 25 m, 2 on each side.',
+      },
+    },
+    {
+      id: 'cr-kick', group: 'crawl', name: 'Kick less', short: 'Kick less',
+      icon: '<path d="M3 15c1.5 0 1.5-1.2 3-1.2s1.5 1.2 3 1.2 1.5-1.2 3-1.2 1.5 1.2 3 1.2 1.5-1.2 3-1.2"/><path d="M8 10.5l2-3M14 10.5l2-3"/>',
+      cue: 'Small, relaxed kicks from your hips. Let your arms do the work.',
+      why: 'Your legs are your biggest muscles and use a lot of oxygen. A big, fast kick is the quickest way to run out of air.',
+      how: [
+        'Kick from your hips with almost straight legs and loose ankles.',
+        'Keep the kick small, inside the width of your body.',
+        'Kick just enough to keep your legs up behind you.',
+      ],
+      feel: 'Your legs flutter quietly behind you, with little splash.',
+      mistakes: [
+        ['Kicking from the knees', 'Bend them only a little. The movement starts at your hips.'],
+        ['Big splashes', 'Your heels should only just break the surface.'],
+      ],
+      drill: {
+        name: 'Fins',
+        short: 'Swim half of your crawl set with short fins, so your legs stay up with gentle kicks.',
+        how: 'Use short fins for half of your crawl set. They keep your legs up with gentle kicks, so you can think only about breathing and a slow stroke. Do the rest without them.',
+      },
+    },
+    {
+      id: 'cr-plan', group: 'crawl', name: 'How the crawl plan works', short: 'The plan',
+      icon: '<path d="M3 20h5v-5h5v-5h5V5h3"/>',
+      cue: 'Short swims with rest, moving up a step at a time.',
+      why: 'Short swims with rest let you practise breathing well many times, instead of struggling through one long swim. Each step adds a little, and the distance you can swim without stopping grows.',
+      how: (c) => [
+        `Your next set: ${c.crawlSet}.`,
+        'Do it after your breaststroke, or on its own as a bonus swim.',
+        'Swim each one slowly and rest at the wall in between.',
+        'When you log the swim, add how many you did, the longest you swam without stopping, and how it felt.',
+        'Finished them all and it felt Easy or OK? The next set moves up a step. Felt hard, or had to stop? Repeat it.',
+      ],
+    }
+  );
   root.PS_TIP_GROUPS = [
     { id: 'stroke', name: 'The stroke, in order' },
     { id: 'body', name: 'Body and breathing' },
@@ -1962,6 +2170,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
   const TIP = {};
   TIPS.forEach((x) => { TIP[x.id] = x; });
   const FOCUS_ROTATION = ['glide', 'kick', 'breathe', 'pull', 'walls', 'head', 'pace', 'count'].filter((id) => TIP[id]);
+  const CRAWL_ROTATION = ['cr-exhale', 'cr-slow', 'cr-two', 'cr-turn', 'cr-kick'].filter((id) => TIP[id]);
   function effortDesc(k, it) {
     const v = PS.verdict(k, it);
     if (v === 'drop') return 'Well short of 5s. Next time goes back to your last clean weight.';
@@ -1983,6 +2192,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     s.settings.swimBase = Object.assign({}, base.settings.swimBase, s.settings.swimBase || {});
     s.settings.rest = Object.assign({}, base.settings.rest, s.settings.rest || {});
     if (typeof s.settings.sound !== 'boolean') s.settings.sound = true;
+    if (typeof s.settings.crawl !== 'boolean') s.settings.crawl = true;
     if (!(s.settings.bodyWeight > 0)) s.settings.bodyWeight = 72;
     if (!(s.settings.age > 0)) s.settings.age = null;
     s.lifts = Array.isArray(s.lifts) ? s.lifts : [];
@@ -2021,6 +2231,22 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
   let calMonthM = T().slice(0, 7);
   let animateCard = false;
   let swipeCtl = null;
+  /* Bonus mode: a tab's card shows an extra session for today. Lasts until it's logged,
+     cancelled, or the day ends. */
+  let bonus = null;
+  const isBonus = (tb) => !!bonus && bonus.tab === tb && bonus.day === T();
+  const BONUS_WORD = { weights: 'session', swim: 'swim', ball: 'game', mornings: 'run' };
+  /* An extra session can go on any day the regular one isn't due. One game or morning a day. */
+  function bonusOK(tb, t) {
+    if (tb === 'weights') return PS.nextLift(state, t).due > t;
+    if (tb === 'swim') return swimDue(t).due > t;
+    if (tb === 'ball') return ballDue(t).due > t && !state.ball.some((e) => e.date === t);
+    if (tb === 'mornings') return !PS.morningDue(state, t).today && !state.mornings.some((e) => e.date === t);
+    return false;
+  }
+  const bonusBtnHTML = (tb, t) => (!isBonus(tb) && bonusOK(tb, t)
+    ? `<button class="bonus-btn" type="button" data-act="bonus" data-tab="${tb}"><span aria-hidden="true">＋</span> Bonus ${BONUS_WORD[tb]} today</button>` : '');
+  const bonusTag = (e) => (e && e.bonus ? ' <span class="tag">Bonus</span>' : '');
   let renderedDay = T();
   const main = $('#main');
   const appEl = $('.app');
@@ -2135,6 +2361,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
   function render() {
     const t = T();
     renderedDay = t;
+    if (bonus && bonus.day !== t) bonus = null;
     $('#title').textContent = TITLES[tab];
     const due = dueToday(t);
     $$('.tab').forEach((b) => {
@@ -2233,22 +2460,43 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     return { fly };
   }
 
+  function cancelBonus() {
+    bonus = null;
+    animateCard = true;
+    render();
+  }
   const HANDLERS = {
     weights: {
-      done: () => { const nl = PS.nextLift(state, T()); openLiftSheet({ type: nl.type, planDate: nl.due }); },
-      skip: () => skipLift(),
+      done: () => {
+        const t = T(); const nl = PS.nextLift(state, t);
+        if (isBonus('weights')) openLiftSheet({ type: nl.type, planDate: t, bonus: true });
+        else openLiftSheet({ type: nl.type, planDate: nl.due });
+      },
+      skip: () => (isBonus('weights') ? cancelBonus() : skipLift()),
     },
     mornings: {
-      done: () => { const t = T(); const d = PS.morningDue(state, t); openMorningSheet({ date: d.due <= t ? d.due : t }); },
-      skip: () => skipWeekly('mornings'),
+      done: () => {
+        const t = T();
+        if (isBonus('mornings')) { openMorningSheet({ date: t, bonus: true }); return; }
+        const d = PS.morningDue(state, t); openMorningSheet({ date: d.due <= t ? d.due : t });
+      },
+      skip: () => (isBonus('mornings') ? cancelBonus() : skipWeekly('mornings')),
     },
     swim: {
-      done: () => { const t = T(); const w = swimDue(t); openSwimSheet({ date: w.due <= t ? w.due : t }); },
-      skip: () => skipWeekly('swims'),
+      done: () => {
+        const t = T();
+        if (isBonus('swim')) { openSwimSheet({ date: t, bonus: true }); return; }
+        const w = swimDue(t); openSwimSheet({ date: w.due <= t ? w.due : t });
+      },
+      skip: () => (isBonus('swim') ? cancelBonus() : skipWeekly('swims')),
     },
     ball: {
-      done: () => { const t = T(); const due = ballDue(t); openGameSheet({ date: due.due <= t ? due.due : t }); },
-      skip: () => skipWeekly('ball'),
+      done: () => {
+        const t = T();
+        if (isBonus('ball')) { openGameSheet({ date: t, bonus: true }); return; }
+        const due = ballDue(t); openGameSheet({ date: due.due <= t ? due.due : t });
+      },
+      skip: () => (isBonus('ball') ? cancelBonus() : skipWeekly('ball')),
     },
   };
 
@@ -2297,6 +2545,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
       const n = Math.max(k.planned, k.done);
       const pips = Array.from({ length: n }, (_, i) => `<i class="${i < k.done ? 'on' : ''}"></i>`).join('');
       let sub = weekNext(kind, k, w, t);
+      if (k.bonus) sub += ` · +${k.bonus} bonus`;
       if (kind === 'morning') {
         const kmW = (state.mornings || []).filter((e) => e.status === 'done' && e.run && e.run.km > 0 && e.date >= w.start && e.date <= w.end).reduce((a, e) => a + e.run.km, 0);
         if (kmW) sub += ` · ${fmtKm(Math.round(kmW * 10) / 10)} km run`;
@@ -2362,7 +2611,9 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
   }
 
   function viewWeights(t) {
-    const nl = PS.nextLift(state, t);
+    const bon = isBonus('weights');
+    const nl0 = PS.nextLift(state, t);
+    const nl = bon ? Object.assign({}, nl0, { due: t, moved: null, bonus: true }) : nl0;
     const sess = PS.SESSIONS[nl.type];
     const plans = sess.lifts.map((k) => PS.liftPlan(state, k, nl.due));
     const pull = PS.pullPlan(state);
@@ -2381,14 +2632,21 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
       if (p.sets < PS.LIFTS[p.key].sets) why.push(`${name}: one heavy set of 5 from now on.`);
     });
     notes.unshift(...why);
+    if (bon) {
+      const hypo = Object.assign({}, state, { lifts: state.lifts.concat([{ id: 'hypo', date: t, type: nl.type, status: 'done', lifts: {} }]) });
+      const after = PS.nextLift(hypo, t);
+      notes.unshift(`Bonus session: your next workout in the rotation, today. After it, ${PS.SESSIONS[after.type].name} is on ${PS.DAY_LONG[PS.dow(after.due)]}.`);
+    }
     const tip = PS.liftDayTip(state);
+    const skipWord = bon ? 'Not today' : 'Skip';
     return `
-      <section aria-label="Next session">
+      <section aria-label="${bon ? 'Bonus session' : 'Next session'}">
         <div class="swipe">
-          ${trackHTML('Did it', 'Skip')}
+          ${trackHTML('Did it', skipWord)}
           ${liftCard(nl, sess, plans, pull, notes, t)}
         </div>
-        ${actionsHTML('Did it', 'Skip')}
+        ${actionsHTML('Did it', skipWord)}
+        ${bonusBtnHTML('weights', t)}
       </section>
       ${tip ? tipHTML(tip) : ''}
       <section aria-labelledby="progH">
@@ -2422,9 +2680,9 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
         <span class="meta"><b>3 sets</b>${pull.last ? `<span>Last ${pull.last.reps.join(' · ')}</span>` : ''}</span>
         <span class="meta">${esc(pull.why)}</span>
       </div>`;
-    const startLabel = wo ? `Resume workout · ${fmtDur(Date.now() - wo.started)}` : 'Start workout';
-    return `<article class="card${animateCard ? ' enter' : ''}" tabindex="0" aria-label="${esc(sess.name)}, ${esc(w.text)}. Swipe right or press the right arrow if you did it, left to skip.">
-        <div class="card-top"><span class="when">${esc(w.text)}</span>${w.late ? '<span class="pill solid">Make-up</span>' : ''}</div>
+    const startLabel = wo ? `Resume workout · ${fmtDur(Date.now() - wo.started)}` : nl.bonus ? 'Start bonus workout' : 'Start workout';
+    return `<article class="card${animateCard ? ' enter' : ''}" tabindex="0" aria-label="${nl.bonus ? 'Bonus session, ' : ''}${esc(sess.name)}, ${esc(w.text)}. Swipe right or press the right arrow if you did it, left ${nl.bonus ? 'to cancel the bonus' : 'to skip'}.">
+        <div class="card-top"><span class="when">${esc(w.text)}</span>${nl.bonus ? '<span class="pill solid">Bonus</span>' : w.late ? '<span class="pill solid">Make-up</span>' : ''}</div>
         <h3>${sess.name}</h3>
         <div class="rows">${rows}${pullRow}</div>
         ${notes.length ? `<ul class="notes">${notes.map((n) => `<li>${esc(n)}</li>`).join('')}</ul>` : ''}
@@ -2486,6 +2744,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     if (s.kind === 'lift') return `<div class="legend v-legend">${LEGEND}${bandKey(`Levels at ${bw} kg, as sets of 5`)}</div>`;
     if (s.kind === 'pull') return `<div class="legend v-legend">${bandKey(`Levels at ${bw} kg, best set`)}</div>`;
     if (s.bands) return `<div class="legend v-legend">${bandKey(`Levels for ${ageTxt()}`)}</div>`;
+    if (s.kind === 'crawl') return '<div class="legend v-legend"><span><svg width="10" height="10" viewBox="0 0 10 10"><circle cx="5" cy="5" r="4" fill="currentColor"/></svg>Finished, felt OK or easy</span><span><svg width="10" height="10" viewBox="0 0 10 10"><circle cx="5" cy="5" r="3.6" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>Hard or had to stop</span></div>';
     return '';
   }
   const bandKey = (txt) => `<span><svg width="14" height="12" viewBox="0 0 14 12"><rect width="14" height="6" fill="currentColor" opacity=".55"/><rect y="6" width="14" height="6" fill="currentColor" opacity=".22"/></svg>${txt}</span>`;
@@ -2529,7 +2788,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
       }
       const sm = liftSummary(e);
       const n = [e.dur ? `${Math.max(1, Math.round(e.dur / 60))} min` : '', sm.flags.join(' · '), e.note ? esc(e.note) : ''].filter(Boolean).join(' · ');
-      return `<button class="item" type="button" data-act="edit-lift" data-id="${esc(e.id)}">${dateBlock(e.date)}<span class="what"><span class="t">${PS.SESSIONS[e.type].name}</span><span class="s">${esc(sm.s)}</span>${n ? `<span class="n">${n}</span>` : ''}</span>${chev}</button>`;
+      return `<button class="item" type="button" data-act="edit-lift" data-id="${esc(e.id)}">${dateBlock(e.date)}<span class="what"><span class="t">${PS.SESSIONS[e.type].name}${bonusTag(e)}</span><span class="s">${esc(sm.s)}</span>${n ? `<span class="n">${n}</span>` : ''}</span>${chev}</button>`;
     }).join('');
     const more = ents.length > 6 ? `<button class="link more" type="button" data-act="more-lifts">${showAllLifts ? 'Show less' : `Show all ${ents.length}`}</button>` : '';
     return `<div class="list">${rows}</div>${more}`;
@@ -2538,6 +2797,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
   /* ---------- chart data ---------- */
   function seriesFor(key, t) {
     if (key === 'swim') return swimSeries();
+    if (key === 'crawl') return crawlSeries();
     if (key === 'pull') return pullSeries();
     if (key === 'run') return runSeries();
     return liftSeries(key, t);
@@ -2595,6 +2855,23 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
       }),
       fmt: (v) => PS.mmss(v), label: (v) => PS.mmss(v),
       empty: 'Log a run time to start the line.', aria: 'Run pace per kilometre',
+    };
+  }
+
+  /* Longest front crawl without stopping, per swim with a crawl set. */
+  function crawlSeries() {
+    const log = PS.crawlLog(state);
+    const FW = { easy: 'easy', ok: 'OK', hard: 'hard' };
+    return {
+      key: 'crawl', kind: 'crawl', title: 'Longest crawl', forecast: null,
+      points: log.map((e) => {
+        const c = e.crawl;
+        const y = c.longest || c.dist;
+        return { x: e.date, y, e, hollow: c.feel === 'hard' || c.done < c.reps,
+          tip: `<b>${y} m</b>without stopping · ${PS.crawlSetTxt(c)}, ${c.done} of ${c.reps} · ${FW[c.feel] || 'OK'} · ${PS.dayDate(e.date)}` };
+      }),
+      fmt: (v) => `${v}`, label: (v) => `${v} m`, ticks: 'int', y0: 0,
+      empty: 'Log a crawl set to start the line.', aria: 'Longest front crawl without stopping, per swim',
     };
   }
 
@@ -2684,7 +2961,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     const span = PS.diff(x0, x1);
     const padD = Math.max(1, span * 0.05);
     const X = (d) => pl + ((PS.diff(x0, d) + padD) / (span + 2 * padD)) * (W - pl - pr);
-    let ys = pts.map((p) => p.y).concat(fc ? [fc.y] : [], refs.map((r) => r.y), nextT != null ? [nextT] : []);
+    let ys = pts.map((p) => p.y).concat(fc ? [fc.y] : [], refs.map((r) => r.y), nextT != null ? [nextT] : [], s.y0 != null && pts.length ? [s.y0] : []);
     if (!ys.length) ys = [0, 1];
     let lo = Math.min(...ys), hi = Math.max(...ys);
     if (lo === hi) { lo -= s.time ? 60 : 5; hi += s.time ? 60 : 5; }
@@ -2898,6 +3175,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     if (s.kind === 'pull') {
       return `${plural(n, 'session')} · Best set ${Math.max(...s.points.map((p) => p.y))} · ${nextLevelTxt('pull')}`;
     }
+    if (s.kind === 'crawl') return `${plural(n, 'crawl set')} · Longest ${Math.max(...s.points.map((p) => p.y))} m without stopping`;
     if (s.kind === 'run') {
       const km = s.points.reduce((a, p) => a + p.e.run.km, 0);
       return `${plural(n, 'run')} · Best ${PS.mmss(Math.min(...s.points.map((p) => p.y)))} per km · ${fmtKm(Math.round(km * 10) / 10)} km in total`;
@@ -2928,6 +3206,12 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
         const p = s.points[i], prev = s.points[i - 1];
         const add = p.e.pull.add ? ` +${PS.kg(p.e.pull.add)}kg` : '';
         rows.push(`<tr data-i="${i}" tabindex="-1"><td>${dotCell(p)}${PS.dayDate(p.x)}</td><td class="n">${p.e.pull.reps.join('·')}${add}</td><td class="n">${p.y}</td><td class="n">${prev ? changeTxt(p.y - prev.y) : 'Start'}</td></tr>`);
+      }
+    } else if (s.kind === 'crawl') {
+      head = ['Date', 'Set', 'Done', 'Longest'];
+      for (let i = s.points.length - 1; i >= 0; i--) {
+        const p = s.points[i], c = p.e.crawl;
+        rows.push(`<tr data-i="${i}" tabindex="-1"><td>${dotCell(p)}${PS.dayDate(p.x)}</td><td class="n">${PS.crawlSetTxt(c)}</td><td class="n">${c.done}/${c.reps}</td><td class="n">${p.y} m</td></tr>`);
       }
     } else if (s.kind === 'run') {
       head = ['Date', 'Dist', 'Time', 'Pace', 'Bag'];
@@ -2969,6 +3253,13 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
       const ch = prev ? (d === 0 ? 'Same best set' : `${changeTxt(d)} ${Math.abs(d) === 1 ? 'rep' : 'reps'}`) : 'First session';
       return `<div class="r-top"><span class="r-date">${PS.dayDate(p.x)}</span><span class="r-chip">${ch}</span><button class="link r-edit" type="button" data-vedit="lift|${esc(p.e.id)}">Edit</button></div>
         <div class="r-main"><span class="r-val">${p.y}<small>reps, best set</small></span><span class="r-sub">${p.e.pull.reps.join(' · ')} · ${PS.sum(p.e.pull.reps)} in total${p.e.pull.add ? ` · +${PS.kg(p.e.pull.add)} kg` : ''}</span></div>`;
+    }
+    if (s.kind === 'crawl') {
+      const c = p.e.crawl;
+      const d = prev ? p.y - prev.y : 0;
+      const ch = prev ? (d === 0 ? 'Same as last time' : `${d > 0 ? '+' : '−'}${Math.abs(d)} m`) : 'First crawl set';
+      return `<div class="r-top"><span class="r-date">${PS.dayDate(p.x)}</span><span class="r-chip">${ch}</span><button class="link r-edit" type="button" data-vedit="swim|${esc(p.e.id)}">Edit</button></div>
+        <div class="r-main"><span class="r-val">${p.y}<small>m without stopping</small></span><span class="r-sub">${PS.crawlSetTxt(c)}, ${c.done} of ${c.reps} done · felt ${c.feel === 'hard' ? 'hard' : c.feel === 'easy' ? 'easy' : 'OK'}</span></div>`;
     }
     if (s.kind === 'run') {
       const e = p.e;
@@ -3202,11 +3493,12 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     const rd = runDefaults();
     const runs = PS.morningRuns(state);
     const lr = runs[runs.length - 1];
-    const due = PS.morningDue(state, t);
+    const bon = isBonus('mornings');
+    const due = bon ? { due: t, today: true } : PS.morningDue(state, t);
     const st = PS.morningStats(state, t);
     const w = whenLabel(due.due, t);
-    const card = `<article class="card${animateCard ? ' enter' : ''}" tabindex="0" aria-label="Run and punching bag, ${esc(w.text)}. Swipe right when it's done, left to skip.">
-        <div class="card-top"><span class="when">${esc(w.text)} · 5:30</span>${st.streak ? `<span class="pill solid">${st.streak} in a row</span>` : ''}</div>
+    const card = `<article class="card${animateCard ? ' enter' : ''}" tabindex="0" aria-label="${bon ? 'Bonus run' : 'Run and punching bag'}, ${esc(w.text)}. Swipe right when it's done, left ${bon ? 'to cancel the bonus' : 'to skip'}.">
+        <div class="card-top"><span class="when">${esc(w.text)}${bon ? '' : ' · 5:30'}</span>${bon ? '<span class="pill solid">Bonus</span>' : st.streak ? `<span class="pill solid">${st.streak} in a row</span>` : ''}</div>
         <h3>Run + Bag</h3>
         <div class="rows">
           <div class="row"><span class="name">Run</span><span class="val">${fmtKm(rd.km)}<small>km</small></span><span class="meta">${lr ? `Last time ${PS.mmss(lr.run.time)} · ${PS.mmss(PS.runPace(lr))} per km` : 'About 10 minutes'}</span></div>
@@ -3219,9 +3511,10 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
       : `Tracking since ${PS.shortDate(st.start)}. Check off your first morning to start.`;
     const aria = `Last 20 weeks: ${st.total} of ${st.possible} mornings done. Opens your full history.`;
     return `
-      <section aria-label="Next morning session">
-        <div class="swipe">${trackHTML('Done', 'Skip')}${card}</div>
-        ${actionsHTML('Done', 'Skip')}
+      <section aria-label="${bon ? 'Bonus run' : 'Next morning session'}">
+        <div class="swipe">${trackHTML('Done', bon ? 'Not today' : 'Skip')}${card}</div>
+        ${actionsHTML('Done', bon ? 'Not today' : 'Skip')}
+        ${bonusBtnHTML('mornings', t)}
       </section>
       <section aria-label="Mornings at a glance">
         <div class="stats">
@@ -3319,10 +3612,11 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     openMorningSheet(e ? { entry: e } : { date });
   }
 
-  function openMorningSheet({ date, entry }) {
+  function openMorningSheet({ date, entry, bonus: asBonus }) {
     const t = T();
     const d = runDefaults();
     const isNew = !entry;
+    const isBon = entry ? !!entry.bonus : !!asBonus;
     const hasRun = entry && entry.run && entry.run.km > 0;
     const m = {
       date: entry ? entry.date : date,
@@ -3350,7 +3644,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
       </div>
       ${entry ? `<button class="btn danger" type="button" data-del>${entry.status === 'skipped' ? 'Delete the skip' : 'Delete this morning'}</button>` : ''}`;
     openSheet({
-      title: isNew ? 'Log morning' : `Edit ${PS.shortDate(entry.date)}`,
+      title: isNew ? (isBon ? 'Log bonus run' : 'Log morning') : `Edit ${PS.shortDate(entry.date)}`,
       body,
       foot: `<button class="btn solid" type="button" data-save>${isNew ? 'Save morning' : 'Save changes'}</button>`,
       onCancel: () => { if (isNew) { animateCard = true; render(); } },
@@ -3390,14 +3684,18 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
             const day = dv > t ? t : dv;
             const before = JSON.parse(JSON.stringify(state.mornings));
             state.mornings = state.mornings.filter((x) => x !== entry && x.date !== day);
-            state.mornings.push({ id: entry ? entry.id : uid(), date: day, status: 'done', run: r.km > 0 ? { km: Math.round(r.km * 100) / 100, time: r.time } : null, bag: m.bag });
+            const me = { id: entry ? entry.id : uid(), date: day, status: 'done', run: r.km > 0 ? { km: Math.round(r.km * 100) / 100, time: r.time } : null, bag: m.bag };
+            if (isBon) me.bonus = true;
+            state.mornings.push(me);
             calMonthM = day.slice(0, 7);
+            if (isBon && isNew) bonus = null;
             save();
             closeSheet(true);
             animateCard = isNew;
             render();
             const st = PS.morningStats(state, T());
-            if (isNew) toast(st.streak > 1 ? `Morning done. ${st.streak} in a row.` : 'Morning done.', () => { state.mornings = before; save(); render(); });
+            if (isNew && isBon) toast('Bonus run logged.', () => { state.mornings = before; save(); render(); });
+            else if (isNew) toast(st.streak > 1 ? `Morning done. ${st.streak} in a row.` : 'Morning done.', () => { state.mornings = before; save(); render(); });
             else toast('Changes saved.');
           }
         });
@@ -3579,26 +3877,30 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
   /* ---------- swim ---------- */
   function viewSwim(t) {
     const ft = swimFocusTip();
-    const due = swimDue(t);
+    const bon = isBonus('swim');
+    const due = bon ? { due: t, late: 0 } : swimDue(t);
     const plan = PS.swimPlan(state);
     const prog = PS.swimProgress(state);
     const goal = plan.goal;
     const w = whenLabel(due.due, t);
-    const card = `<article class="card${animateCard ? ' enter' : ''}" tabindex="0" aria-label="Swim, ${esc(w.text)}. Swipe right if you swam, left to skip.">
-        <div class="card-top"><span class="when">${esc(w.text)}</span>${due.late ? '<span class="pill solid">Log it</span>' : ''}</div>
+    const card = `<article class="card${animateCard ? ' enter' : ''}" tabindex="0" aria-label="${bon ? 'Bonus swim' : 'Swim'}, ${esc(w.text)}. Swipe right if you swam, left ${bon ? 'to cancel the bonus' : 'to skip'}.">
+        <div class="card-top"><span class="when">${esc(w.text)}</span>${bon ? '<span class="pill solid">Bonus</span>' : due.late ? '<span class="pill solid">Log it</span>' : ''}</div>
         <h3>${km(plan.dist)} swim</h3>
         <div class="rows">
           <div class="row"><span class="name">${esc(plan.aimLabel)}</span><span class="val">${esc(plan.aimValue)}</span><span class="meta">${esc(plan.sub)}</span></div>
           <div class="row"><span class="name">Focus</span><span class="val word">${esc(ft.drill.name)}</span><span class="meta cue">${esc(ft.drill.short)}</span><span class="meta"><button class="link card-link" type="button" data-act="tip" data-tip="${ft.id}">How to do it →</button></span></div>
+          ${crawlRowHTML()}
         </div>
       </article>`;
     const s = swimSeries();
     const best = s.points.length ? statsLine(s).split(' · ').slice(1).join(' · ') : 'Your swims will plot here';
     return `
-      <section aria-label="Next swim">
-        <div class="swipe">${trackHTML('Swam', 'Skip')}${card}</div>
-        ${actionsHTML('Swam', 'Skip')}
+      <section aria-label="${bon ? 'Bonus swim' : 'Next swim'}">
+        <div class="swipe">${trackHTML('Swam', bon ? 'Not today' : 'Skip')}${card}</div>
+        ${actionsHTML('Swam', bon ? 'Not today' : 'Skip')}
+        ${bonusBtnHTML('swim', t)}
       </section>
+      ${crawlHTML()}
       <section aria-labelledby="goalH">
         ${secHead('<span id="goalH">Goal</span>', '<button class="link" type="button" data-act="goal">Change goal</button>')}
         <div class="panel">
@@ -3615,8 +3917,39 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
       </section>
       ${techniqueHTML()}
       <section aria-labelledby="swimHistH">
-        ${secHead('<span id="swimHistH">History</span>', `<span class="aside">${plural(PS.swimsDone(state).length, 'swim')}</span>`)}
+        ${secHead('<span id="swimHistH">History</span>', `<span class="aside">${plural(state.swims.filter((e) => e.status === 'done').length, 'swim')}</span>`)}
         ${swimHistoryHTML()}
+      </section>`;
+  }
+
+  /* ---------- learning front crawl ---------- */
+  function crawlRowHTML() {
+    if (!state.settings.crawl) return '';
+    const cp = PS.crawlPlan(state);
+    const tip = TIP[CRAWL_ROTATION[cp.n % CRAWL_ROTATION.length]];
+    return `<div class="row"><span class="name">Crawl</span><span class="val word">${esc(PS.crawlSetTxt(cp))}</span>
+        <span class="meta"><b>${cp.rest ? `${cp.rest} s rest` : 'Without stopping'}</b><span>Step ${cp.step + 1} of ${cp.of}</span></span>
+        ${tip ? `<span class="meta cue">${esc(tip.cue)}</span>` : ''}</div>`;
+  }
+
+  function crawlHTML() {
+    if (!state.settings.crawl) return '';
+    const cp = PS.crawlPlan(state);
+    const segs = PS.CRAWL_STEPS.map((x, i) => `<i class="${i < cp.step ? 'done' : i === cp.step ? 'cur' : ''}"></i>`).join('');
+    const tips = TIPS.filter((x) => x.group === 'crawl').map((x) => `<button class="item tip-item" type="button" data-act="tip" data-tip="${x.id}"><span class="tip-ic" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${x.icon || ''}</svg></span><span class="what"><span class="t">${esc(x.name)}</span><span class="s">${esc(x.cue)}</span></span>${chev}</button>`).join('');
+    const s = crawlSeries();
+    const chart = s.points.length ? chartPanel(s, `Longest so far <b>${cp.best} m</b> · Goal 400 m`) : '';
+    return `<section aria-labelledby="crawlH">
+        ${secHead('<span id="crawlH">Front crawl</span>', `<span class="aside">Step ${cp.step + 1} of ${cp.of}</span>`)}
+        <div class="panel crawl-panel">
+          <div class="goal-top"><span class="goal-name">${esc(PS.crawlSetTxt(cp))}</span><span class="goal-line">${cp.rest ? `${cp.rest} s rest between` : 'Without stopping'}</span></div>
+          <div class="cr-steps" role="img" aria-label="Step ${cp.step + 1} of ${cp.of}">${segs}</div>
+          <div class="goal-nums"><span>Longest without stopping <b>${cp.best ? `${cp.best} m` : '–'}</b></span><span>Goal <b>400 m</b></span></div>
+          <p class="goal-desc">${esc(cp.why)}. Do it after your breaststroke, or as a bonus swim.</p>
+        </div>
+        ${chart}
+        <h3 class="tip-group">Getting past 25 m</h3>
+        <div class="list tips">${tips}</div>
       </section>`;
   }
 
@@ -3650,7 +3983,9 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     const per100 = (plan.aim / plan.dist) * 100;
     const goal = plan.goal;
     const g100 = goal.id === 'faster1k' ? goal.time / 10 : goal.id === 'combo' ? goal.pace : Math.max(60, per100 - 5);
-    return { aim: PS.mmss(plan.aim), dist: km(plan.dist), per100: PS.mmss(per100), perLen: Math.round(per100 / 4), goal100: PS.mmss(g100) };
+    const cp = PS.crawlPlan(state);
+    return { aim: PS.mmss(plan.aim), dist: km(plan.dist), per100: PS.mmss(per100), perLen: Math.round(per100 / 4), goal100: PS.mmss(g100),
+      crawlSet: `${PS.crawlSetTxt(cp)}${cp.rest ? ` with ${cp.rest} s rest in between` : ' without stopping'}` };
   }
 
   function tipBodyHTML(x) {
@@ -3670,8 +4005,9 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
         <button class="btn ${pinned ? 'solid' : 'line'}" type="button" data-focus="${x.id}" aria-pressed="${pinned}">${pinned ? 'Next swim’s focus ✓' : 'Make it my next swim’s focus'}</button></div>` : ''}`;
   }
   function tipFootHTML(x) {
-    const i = TIPS.indexOf(x);
-    const prev = TIPS[i - 1], next = TIPS[i + 1];
+    const fam = TIPS.filter((y) => (y.group === 'crawl') === (x.group === 'crawl'));
+    const i = fam.indexOf(x);
+    const prev = fam[i - 1], next = fam[i + 1];
     return `${prev ? `<button class="btn line" type="button" data-tipgo="${prev.id}">← ${esc(prev.short || prev.name)}</button>` : ''}${next ? `<button class="btn solid" type="button" data-tipgo="${next.id}">${esc(next.short || next.name)} →</button>` : ''}`;
   }
 
@@ -3728,10 +4064,14 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
       if (e.status === 'skipped') {
         return `<button class="item skipped" type="button" data-act="edit-swim" data-id="${esc(e.id)}">${dateBlock(e.date)}<span class="what"><span class="t">Skipped</span></span>${chev}</button>`;
       }
+      const cr = e.crawl && e.crawl.done > 0 ? `Crawl ${PS.crawlSetTxt(e.crawl)}, ${e.crawl.done} of ${e.crawl.reps} · longest ${e.crawl.longest} m` : '';
+      if (!(e.dist > 0)) {
+        return `<button class="item" type="button" data-act="edit-swim" data-id="${esc(e.id)}">${dateBlock(e.date)}<span class="what"><span class="t">Crawl practice${bonusTag(e)}</span><span class="s">${esc(cr || 'Crawl')}</span>${e.note ? `<span class="n">${esc(e.note)}</span>` : ''}</span>${chev}</button>`;
+      }
       const sub = `${PS.mmss(PS.swimPace(e))} per 100 m${e.strokes ? ` · ${e.strokes} strokes/length` : ''}`;
       const fx = e.focus && TIP[e.focus] && TIP[e.focus].drill ? `Focus: ${TIP[e.focus].drill.name}` : '';
-      const n = [fx, e.note || ''].filter(Boolean).join(' · ');
-      return `<button class="item" type="button" data-act="edit-swim" data-id="${esc(e.id)}">${dateBlock(e.date)}<span class="what"><span class="t">${km(e.dist)} · ${PS.mmss(e.time)}</span><span class="s">${sub}</span>${n ? `<span class="n">${esc(n)}</span>` : ''}</span>${chev}</button>`;
+      const n = [cr, fx, e.note || ''].filter(Boolean).join(' · ');
+      return `<button class="item" type="button" data-act="edit-swim" data-id="${esc(e.id)}">${dateBlock(e.date)}<span class="what"><span class="t">${km(e.dist)} · ${PS.mmss(e.time)}${bonusTag(e)}</span><span class="s">${sub}</span>${n ? `<span class="n">${esc(n)}</span>` : ''}</span>${chev}</button>`;
     }).join('');
     const more = ents.length > 6 ? `<button class="link more" type="button" data-act="more-swims">${showAllSwims ? 'Show less' : `Show all ${ents.length}`}</button>` : '';
     return `<div class="list">${rows}</div>${more}`;
@@ -3739,11 +4079,12 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
 
   /* ---------- basketball ---------- */
   function viewBall(t) {
-    const due = ballDue(t);
+    const bon = isBonus('ball');
+    const due = bon ? { due: t, late: 0 } : ballDue(t);
     const st = PS.ballStats(state, t);
     const w = whenLabel(due.due, t);
-    const card = `<article class="card${animateCard ? ' enter' : ''}" tabindex="0" aria-label="Basketball, ${esc(w.text)}. Swipe right if you played, left if you sat it out.">
-        <div class="card-top"><span class="when">${esc(w.text)}</span>${due.late ? '<span class="pill solid">Log it</span>' : ''}</div>
+    const card = `<article class="card${animateCard ? ' enter' : ''}" tabindex="0" aria-label="${bon ? 'Bonus game' : 'Basketball'}, ${esc(w.text)}. Swipe right if you played, left ${bon ? 'to cancel the bonus' : 'if you sat it out'}.">
+        <div class="card-top"><span class="when">${esc(w.text)}</span>${bon ? '<span class="pill solid">Bonus</span>' : due.late ? '<span class="pill solid">Log it</span>' : ''}</div>
         <h3>Basketball</h3>
         <div class="rows"><div class="row"><span class="name">Played?</span><span class="val word">✓</span><span class="meta">Swipe right, then note how it went and what you ate.</span></div></div>
         <div class="fuel" aria-label="Game-day fuel">
@@ -3753,9 +4094,10 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
         </div>
       </article>`;
     return `
-      <section aria-label="Next game">
-        <div class="swipe">${trackHTML('Played', 'Skip')}${card}</div>
-        ${actionsHTML('Played', 'Skip')}
+      <section aria-label="${bon ? 'Bonus game' : 'Next game'}">
+        <div class="swipe">${trackHTML('Played', bon ? 'Not today' : 'Skip')}${card}</div>
+        ${actionsHTML('Played', bon ? 'Not today' : 'Skip')}
+        ${bonusBtnHTML('ball', t)}
       </section>
       <section aria-label="Games played">
         <div class="stats">
@@ -3793,7 +4135,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
   function gamesHTML() {
     const games = state.ball.filter((e) => e.status === 'done').sort(PS.byDate).reverse().slice(0, 6);
     if (!games.length) return '';
-    const rows = games.map((e) => `<button class="item" type="button" data-act="game" data-id="${esc(e.id)}">${dateBlock(e.date)}<span class="what"><span class="t">${e.d ? esc(gameLine(e.d).split(' · ')[0]) : 'Game'}</span><span class="s">${esc(e.d ? gameLine(e.d).split(' · ').slice(1).join(' · ') || 'Nothing else noted' : 'Tap to add how it went')}</span>${e.d && (e.d.meal || e.d.note) ? `<span class="n">${esc([e.d.meal, e.d.note].filter(Boolean).join(' · '))}</span>` : ''}</span>${chev}</button>`).join('');
+    const rows = games.map((e) => `<button class="item" type="button" data-act="game" data-id="${esc(e.id)}">${dateBlock(e.date)}<span class="what"><span class="t">${e.d ? esc(gameLine(e.d).split(' · ')[0]) : 'Game'}${bonusTag(e)}</span><span class="s">${esc(e.d ? gameLine(e.d).split(' · ').slice(1).join(' · ') || 'Nothing else noted' : 'Tap to add how it went')}</span>${e.d && (e.d.meal || e.d.note) ? `<span class="n">${esc([e.d.meal, e.d.note].filter(Boolean).join(' · '))}</span>` : ''}</span>${chev}</button>`).join('');
     return `<section aria-labelledby="gamesH">
         ${secHead('<span id="gamesH">Games</span>', '<span class="aside">Tap to edit</span>')}
         <div class="list">${rows}</div>
@@ -3824,9 +4166,10 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
       </section>`;
   }
 
-  function openGameSheet({ date, entry }) {
+  function openGameSheet({ date, entry, bonus: asBonus }) {
     const t = T();
     const isNew = !entry;
+    const isBon = entry ? !!entry.bonus : !!asBonus;
     const d0 = (entry && entry.d) || {};
     const m = {
       date: entry ? entry.date : date,
@@ -3855,7 +4198,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
       <div class="field"><label class="lbl" for="gNote">Note</label><input class="inp" id="gNote" maxlength="160" placeholder="Optional" value="${esc(d0.note || '')}"></div>
       ${entry ? '<button class="btn danger" type="button" data-del>Delete this game</button>' : ''}`;
     openSheet({
-      title: isNew ? 'Log game' : `Game ${PS.shortDate(entry.date)}`,
+      title: isNew ? (isBon ? 'Log bonus game' : 'Log game') : `Game ${PS.shortDate(entry.date)}`,
       body,
       foot: `<button class="btn solid" type="button" data-save>${isNew ? 'Save game' : 'Save changes'}</button>`,
       onCancel: () => { if (isNew) { animateCard = true; render(); } },
@@ -3891,13 +4234,14 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
             const before = JSON.parse(JSON.stringify(state.ball));
             state.ball = state.ball.filter((x) => x !== entry && x.date !== day);
             const any = Object.keys(d).some((k) => k !== 'extras') || d.extras.length;
-            state.ball.push(Object.assign({ id: entry ? entry.id : uid(), date: day, status: 'done' }, any ? { d } : {}));
+            state.ball.push(Object.assign({ id: entry ? entry.id : uid(), date: day, status: 'done' }, isBon ? { bonus: true } : {}, any ? { d } : {}));
             calMonth = day.slice(0, 7);
+            if (isBon && isNew) bonus = null;
             save();
             closeSheet(true);
             animateCard = isNew;
             render();
-            if (isNew) toast(`Game logged for ${PS.DAY_LONG[PS.dow(day)]}.`, () => { state.ball = before; save(); render(); });
+            if (isNew) toast(isBon ? 'Bonus game logged.' : `Game logged for ${PS.DAY_LONG[PS.dow(day)]}.`, () => { state.ball = before; save(); render(); });
             else toast('Changes saved.');
           }
         });
@@ -3974,7 +4318,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
   function savedToast(e) {
     const n2 = PS.nextLift(state, T());
     const next = PS.SESSIONS[n2.type].lifts.map((k) => `${PS.LIFTS[k].short} ${PS.kg(PS.liftPlan(state, k, n2.due).w)}`).join(' · ');
-    toast(`Saved. Next: ${PS.DAY_LONG[PS.dow(n2.due)]}, ${next}.`, () => { state.lifts = state.lifts.filter((x) => x.id !== e.id); save(); render(); });
+    toast(`${e.bonus ? 'Bonus session saved' : 'Saved'}. Next: ${PS.DAY_LONG[PS.dow(n2.due)]}, ${next}.`, () => { state.lifts = state.lifts.filter((x) => x.id !== e.id); save(); render(); });
   }
 
   main.addEventListener('click', (e) => {
@@ -3983,7 +4327,8 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     const act = b.dataset.act;
     if (act === 'done' && swipeCtl) swipeCtl.fly(1);
     else if (act === 'skip' && swipeCtl) swipeCtl.fly(-1);
-    else if (act === 'start') openWorkout();
+    else if (act === 'start') openWorkout(isBonus('weights'));
+    else if (act === 'bonus') { bonus = { tab: b.dataset.tab, day: T() }; animateCard = true; render(); const c = $('.card', main); if (c) c.focus({ preventScroll: true }); }
     else if (act === 'expand') openViewer(b.dataset.key, null, b.closest('.panel'));
     else if (act === 'chart') openViewer(b.dataset.key, null, b);
     else if (act === 'goto') setTab(b.dataset.tab);
@@ -4052,14 +4397,14 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     try { if (wo) localStorage.setItem(WKEY, JSON.stringify(wo)); else localStorage.removeItem(WKEY); } catch (e) { /* ignore */ }
   }
 
-  function buildWorkout() {
+  function buildWorkout(asBonus) {
     const t = T();
     const nl = PS.nextLift(state, t);
     const sess = PS.SESSIONS[nl.type];
     const steps = [];
     const w = {};
     sess.lifts.forEach((k) => {
-      const p = PS.liftPlan(state, k, nl.due);
+      const p = PS.liftPlan(state, k, asBonus ? t : nl.due);
       w[k] = p.w;
       const warm = PS.warmups(k, p.w);
       warm.forEach(([x, r], i) => steps.push({ k, kind: 'warm', n: i + 1, of: warm.length, w: x, reps: r }));
@@ -4068,7 +4413,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     const pp = PS.pullPlan(state);
     for (let i = 0; i < 3; i++) steps.push({ k: 'pull', kind: 'work', n: i + 1, of: 3, reps: pp.reps[i] || pp.reps[pp.reps.length - 1] || 5 });
     const now = Date.now();
-    return { v: 1, type: nl.type, started: now, touched: now, steps, i: 0, phase: 'set', restEnd: 0, restTotal: 0, restOver: 0, last: -1, done: {}, effort: {}, w, add: pp.add || 0, pending: null };
+    return { v: 1, type: nl.type, started: now, touched: now, steps, i: 0, phase: 'set', restEnd: 0, restTotal: 0, restOver: 0, last: -1, done: {}, effort: {}, w, add: pp.add || 0, pending: null, bonus: !!asBonus };
   }
 
   const liftName = (k) => (k === 'pull' ? 'Pull-ups' : PS.LIFTS[k].name);
@@ -4087,6 +4432,51 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     const what = `${st.kind === 'warm' ? 'Warm-up' : 'Set'} ${st.n} of ${st.of}`;
     if (st.k === 'pull') return `${liftName(st.k)} · ${what} · ${wo.add ? `+${PS.kg(wo.add)} kg, ` : ''}max reps`;
     return `${liftName(st.k)} · ${what} · ${PS.kg(stepWeight(st))} kg × ${st.reps}`;
+  }
+
+  /* Loading the bar: plates per side for the next set, what to add or take off,
+     and a small picture of one sleeve (heaviest plate nearest the middle). */
+  const PLATE_H = { 25: 46, 20: 46, 15: 40, 10: 34, 5: 26, 2.5: 20, 1.25: 15 };
+  const PLATE_W = { 25: 12, 20: 11, 15: 10, 10: 9, 5: 7, 2.5: 6, 1.25: 5 };
+  const platesTxt = (ps) => ps.map(PS.kg).join(' + ');
+  function barSVG(plates, keepN) {
+    const H = 50, mid = H / 2;
+    let x = 10;
+    let g = `<rect class="b-stop" x="3" y="${mid - 10}" width="5" height="20" rx="1.5"/>`;
+    const parts = plates.map((p, i) => {
+      const w = PLATE_W[p] || 6, h = PLATE_H[p] || 20;
+      const r = `<rect class="b-plate${i < keepN ? ' keep' : ''}" x="${x}" y="${mid - h / 2}" width="${w}" height="${h}" rx="2"/>`;
+      x += w + 2;
+      return r;
+    });
+    const end = Math.max(x + 18, 60);
+    g = `<rect class="b-sleeve" x="3" y="${mid - 3}" width="${end - 3}" height="6" rx="3"/>` + g + parts.join('');
+    return `<svg class="b-pic" viewBox="0 0 ${end + 2} ${H}" width="${end + 2}" height="${H}" aria-hidden="true">${g}</svg>`;
+  }
+  function loadHTML(nx) {
+    if (!nx || nx.k === 'pull') return '';
+    const w = stepWeight(nx);
+    const target = PS.platesPerSide(w);
+    const prev = wo.last >= 0 ? wo.steps[wo.last] : null;
+    const same = prev && prev.k === nx.k && prev.k !== 'pull';
+    const cur = same ? PS.platesPerSide(stepWeight(prev)) : null;
+    let keepN = 0, change = '';
+    if (target && cur) {
+      while (keepN < cur.length && keepN < target.length && cur[keepN] === target[keepN]) keepN++;
+      const off = cur.slice(keepN), on = target.slice(keepN);
+      if (!off.length && !on.length) change = 'Same as last set';
+      else if (!off.length) change = `Add ${platesTxt(on)} on each side`;
+      else if (!on.length) change = `Take ${platesTxt(off)} off each side`;
+      else change = `Off ${platesTxt(off)}, on ${platesTxt(on)}`;
+    }
+    const each = target == null ? 'Check the plates' : target.length ? `${platesTxt(target)} a side` : 'Empty bar';
+    const pic = target && target.length ? barSVG(target, keepN) : '';
+    return `<div class="wo-load${pic ? '' : ' no-pic'}" aria-label="Load the bar: ${PS.kg(w)} kg, ${esc(each)}${change ? `. ${esc(change)}` : ''}">
+        <div class="wl-top"><span class="wl-lbl">Load the bar</span><span class="wl-kg">${PS.kg(w)}<small>kg</small></span></div>
+        ${pic}
+        <p class="wl-each">${esc(each)}</p>
+        ${change ? `<p class="wl-change">${esc(change)}</p>` : ''}
+      </div>`;
   }
 
   function workoutModel() {
@@ -4154,8 +4544,8 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     if (live) { live.textContent = ''; setTimeout(() => { live.textContent = msg; }, 30); }
   }
 
-  function openWorkout() {
-    if (!wo) { wo = buildWorkout(); saveWorkout(); }
+  function openWorkout(asBonus) {
+    if (!wo) { wo = buildWorkout(asBonus); saveWorkout(); }
     woDialog = false; woDiscardArmed = false; woMsg = '';
     if (!woEl) {
       woEl = document.createElement('div');
@@ -4199,7 +4589,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     box.innerHTML = `
       <header class="wo-top">
         <button class="wo-icon" type="button" data-wo="end" aria-label="End workout">${ICON.x}</button>
-        <div class="wo-title"><span class="wo-name" id="woName">${esc(PS.SESSIONS[wo.type].name)}</span><span class="wo-clock">${fmtDur((wo.ended || Date.now()) - wo.started)}</span></div>
+        <div class="wo-title"><span class="wo-name" id="woName">${wo.bonus ? 'Bonus · ' : ''}${esc(PS.SESSIONS[wo.type].name)}</span><span class="wo-clock">${fmtDur((wo.ended || Date.now()) - wo.started)}</span></div>
         <button class="wo-icon" type="button" data-wo="sound" aria-pressed="${!!state.settings.sound}" aria-label="Beep when rest ends">${state.settings.sound ? ICON.sound : ICON.mute}</button>
       </header>
       ${progHTML()}
@@ -4275,7 +4665,8 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     const cur = lastOfLift ? (wo.effort[lastSt.k] || 'clean') : null;
     const feel = lastOfLift ? `<div class="wo-feel"><p>How did ${esc(PS.LIFTS[lastSt.k].name.toLowerCase())} feel?</p>
         <div class="seg" role="radiogroup" aria-label="How did it feel">${Object.keys(EFFORT).map((e) => `<button type="button" role="radio" data-wo="feel" data-v="${e}" aria-checked="${cur === e}">${EFFORT[e].label}</button>`).join('')}</div></div>` : '';
-    return `<div class="wo-rest${lastOfLift ? ' has-feel' : ''}">
+    const load = loadHTML(nx);
+    return `<div class="wo-rest${lastOfLift ? ' has-feel' : ''}${load ? ' has-load' : ''}">
         <div class="wo-info">
           <div class="ring" role="timer" aria-label="Rest time left">
             <svg viewBox="0 0 100 100" aria-hidden="true"><circle class="ring-track" cx="50" cy="50" r="46"/><circle class="ring-bar" cx="50" cy="50" r="46" style="stroke-dasharray:${C};stroke-dashoffset:${(C * (1 - frac)).toFixed(2)}"/></svg>
@@ -4285,7 +4676,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
         </div>
         <div class="wo-act">
           <p class="wo-next">Next: <b>${esc(stepLine(nx))}</b></p>
-          ${fix}${feel}
+          ${load}${fix}${feel}
           <button class="wo-go" type="button" data-wo="skiprest">Start next set</button>
           <div class="wo-links"><button class="link" type="button" data-wo="undo">Undo last set</button></div>
         </div>
@@ -4406,6 +4797,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
       return;
     }
     const e = { id: uid(), type: wo.type, status: 'done', date: m.date, lifts: m.lifts, pull: m.pull, note: '', dur: m.dur };
+    if (wo.bonus) { e.bonus = true; bonus = null; }
     state.lifts.push(e);
     save();
     wo = null;
@@ -4497,9 +4889,10 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
       case 'review': {
         const m = workoutModel();
         const type = wo.type;
+        const wasBonus = !!wo.bonus;
         closeWorkout();
         openLiftSheet({
-          type, prefill: m,
+          type, prefill: m, bonus: wasBonus,
           onSaved: () => { wo = null; saveWorkout(); },
           onCancel: () => openWorkout(),
         });
@@ -4549,10 +4942,11 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
   }
 
   /* Lift session sheet: new log (from the card or a finished workout) or edit (from history). */
-  function openLiftSheet({ type, planDate, entry, prefill, onSaved, onCancel }) {
+  function openLiftSheet({ type, planDate, entry, prefill, onSaved, onCancel, bonus: asBonus }) {
     const t = T();
     const sess = PS.SESSIONS[type];
     const isNew = !entry;
+    const isBon = entry ? !!entry.bonus : !!asBonus;
     const src = entry || prefill || null;
     const model = { date: src && src.date ? src.date : t, note: entry ? entry.note || '' : '', lifts: {}, pull: null };
     sess.lifts.forEach((k) => {
@@ -4604,7 +4998,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
       ${entry ? '<button class="btn danger" type="button" data-del>Delete this session</button>' : ''}`;
 
     const sh = openSheet({
-      title: isNew ? sess.name : `Edit ${PS.shortDate(entry.date)}`,
+      title: isNew ? (isBon ? `Bonus · ${sess.name}` : sess.name) : `Edit ${PS.shortDate(entry.date)}`,
       body: body(),
       foot: `<button class="btn solid" type="button" data-save>${isNew ? 'Save session' : 'Save changes'}</button>`,
       closeLabel: prefill ? 'Back' : 'Cancel',
@@ -4715,6 +5109,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
       e.note = (model.note || '').trim();
       if (prefill && prefill.dur) e.dur = prefill.dur;
       delete e.src;
+      if (isNew && isBon) { e.bonus = true; bonus = null; }
       if (isNew) state.lifts.push(e);
       save();
       closeSheet(true);
@@ -4745,31 +5140,56 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
   }
 
   /* Swim sheet */
-  function openSwimSheet({ date, entry }) {
+  const CRAWL_FEEL = [['easy', 'Easy'], ['ok', 'OK'], ['hard', 'Hard']];
+  function openSwimSheet({ date, entry, bonus: asBonus }) {
     const t = T();
     const plan = PS.swimPlan(state);
     const isNew = !entry;
+    const isBon = entry ? !!entry.bonus : !!asBonus;
     const m = entry
-      ? { date: entry.date, dist: entry.dist, time: entry.time, strokes: entry.strokes || '', note: entry.note || '' }
+      ? { date: entry.date, dist: entry.dist || 0, time: entry.time || 0, strokes: entry.strokes || '', note: entry.note || '' }
       : { date, dist: plan.dist, time: plan.aim, strokes: '', note: '' };
+    const ec = entry && entry.crawl;
+    const cp = PS.crawlPlan(state);
+    const showCrawl = !!(state.settings.crawl || ec);
+    const c = ec
+      ? { on: true, step: ec.step || 0, done: ec.done, longest: ec.longest || ec.dist, feel: ec.feel || 'ok' }
+      : { on: isNew && !!state.settings.crawl, step: cp.step, done: cp.reps, longest: cp.dist, feel: 'ok' };
+    const crawlNextTxt = () => {
+      const st = PS.CRAWL_STEPS[c.step];
+      const nx = PS.crawlNext({ step: c.step, reps: st.reps, done: c.done, feel: c.feel });
+      return nx.step !== c.step ? `Next time: ${PS.crawlSetTxt(PS.CRAWL_STEPS[nx.step])}.` : `Next time: ${PS.crawlSetTxt(st)} again.`;
+    };
+    const crawlBlock = () => {
+      if (!showCrawl) return '';
+      const st = PS.CRAWL_STEPS[c.step];
+      return `<div class="block" data-crawl>
+          <div class="block-head"><h3>Crawl</h3>
+            <div class="seg two cr-on" role="radiogroup" aria-label="Did you do the crawl set?"><button type="button" role="radio" data-con="0" aria-checked="${!c.on}">Not today</button><button type="button" role="radio" data-con="1" aria-checked="${c.on}">Did it</button></div></div>
+          ${c.on ? `<div class="chips cr-pick" role="radiogroup" aria-label="Which crawl set">${PS.CRAWL_STEPS.map((x, i) => `<button class="chip" type="button" role="radio" data-cstep="${i}" aria-checked="${i === c.step}">${PS.crawlSetTxt(x)}</button>`).join('')}</div>
+          <div class="rest-row"><span>Done <span class="muted small">of ${st.reps}</span></span><div class="stepper sm"><button type="button" data-cd="-1" aria-label="One fewer">−</button><output id="cDone">${c.done}</output><button type="button" data-cd="1" aria-label="One more">+</button></div></div>
+          <div class="rest-row"><span>Longest without stopping</span><div class="stepper sm"><button type="button" data-cl="-1" aria-label="25 metres less">−</button><output id="cLong">${c.longest} m</output><button type="button" data-cl="1" aria-label="25 metres more">+</button></div></div>
+          <div class="seg" role="radiogroup" aria-label="How did the crawl feel?">${CRAWL_FEEL.map(([v, w]) => `<button type="button" role="radio" data-cf="${v}" aria-checked="${c.feel === v}">${w}</button>`).join('')}</div>
+          <p class="effort-desc" id="cNext">${crawlNextTxt()}</p>` : ''}
+        </div>`;
+    };
     const body = `
       <div class="field inline"><label class="lbl" for="swDate">Date</label><input class="inp" type="date" id="swDate" value="${m.date}" max="${t}"></div>
       <div class="block">
-        <div class="block-head"><h3>Distance</h3><div class="stepper"><button type="button" data-dd="-1" aria-label="50 metres less">−</button><input id="swDist" inputmode="numeric" value="${m.dist}" aria-label="Distance in metres"><span class="unit">m</span><button type="button" data-dd="1" aria-label="50 metres more">+</button></div></div>
-      </div>
-      <div class="block">
-        <div class="block-head"><h3>Time</h3>
+        <div class="block-head"><h3>${showCrawl ? 'Breaststroke' : 'Distance'}</h3><div class="stepper"><button type="button" data-dd="-1" aria-label="50 metres less">−</button><input id="swDist" inputmode="numeric" value="${m.dist}" aria-label="Distance in metres"><span class="unit">m</span><button type="button" data-dd="1" aria-label="50 metres more">+</button></div></div>
+        <div class="block-head"><span class="lbl">Time</span>
           <div class="time-row"><input class="inp" id="swMin" inputmode="numeric" pattern="[0-9]*" value="${Math.floor(m.time / 60)}" aria-label="Minutes"><span>:</span><input class="inp" id="swSec" inputmode="numeric" pattern="[0-9]*" value="${String(Math.round(m.time % 60)).padStart(2, '0')}" aria-label="Seconds"></div>
         </div>
         <p class="calc" id="swCalc"></p>
       </div>
+      ${crawlBlock()}
       <div class="block">
-        <div class="field"><label class="lbl" for="swStrokes">Strokes per length (optional)</label><input class="inp" id="swStrokes" inputmode="numeric" pattern="[0-9]*" placeholder="Count a few lengths" value="${m.strokes}"></div>
+        <div class="field"><label class="lbl" for="swStrokes">Breaststroke strokes per length (optional)</label><input class="inp" id="swStrokes" inputmode="numeric" pattern="[0-9]*" placeholder="Count a few lengths" value="${m.strokes}"></div>
       </div>
       <div class="field"><label class="lbl" for="swNote">Note</label><input class="inp" id="swNote" maxlength="160" placeholder="Optional" value="${esc(m.note)}"></div>
       ${entry ? '<button class="btn danger" type="button" data-del>Delete this swim</button>' : ''}`;
     openSheet({
-      title: isNew ? 'Log swim' : `Edit ${PS.shortDate(entry.date)}`,
+      title: isNew ? (isBon ? 'Log bonus swim' : 'Log swim') : `Edit ${PS.shortDate(entry.date)}`,
       body,
       foot: `<button class="btn solid" type="button" data-save>${isNew ? 'Save swim' : 'Save changes'}</button>`,
       onCancel: () => { if (isNew) { animateCard = true; render(); } },
@@ -4777,7 +5197,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
         const read = () => {
           const d = parseInt($('#swDist', el).value, 10);
           const mi = parseInt($('#swMin', el).value || '0', 10), se = parseInt($('#swSec', el).value || '0', 10);
-          return { d, time: (isFinite(mi) ? mi : 0) * 60 + (isFinite(se) ? se : 0) };
+          return { d: isFinite(d) ? Math.max(0, d) : 0, time: (isFinite(mi) ? mi : 0) * 60 + (isFinite(se) ? se : 0) };
         };
         const calc = () => {
           const r = read();
@@ -4785,7 +5205,16 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
           if (r.d > 0 && r.time > 0) {
             const pace = (r.time / r.d) * 100;
             out.innerHTML = `Pace <b>${PS.mmss(pace)}</b> per 100 m · 1 km in <b>${PS.mmss(pace * 10)}</b>`;
-          } else out.textContent = 'Enter distance and time to see your pace.';
+          } else if (!(r.d > 0)) out.textContent = showCrawl ? 'No breaststroke today. Fine for a crawl-only swim.' : 'Enter the distance in metres.';
+          else out.textContent = 'Enter distance and time to see your pace.';
+        };
+        const redrawCrawl = (focusSel) => {
+          const blk = $('[data-crawl]', el);
+          if (!blk) return;
+          const tmp = document.createElement('div');
+          tmp.innerHTML = crawlBlock();
+          blk.replaceWith(tmp.firstElementChild);
+          if (focusSel) { const nb = $(focusSel, el); if (nb) nb.focus({ preventScroll: true }); }
         };
         calc();
         el.addEventListener('input', (e) => { if (['swDist', 'swMin', 'swSec'].includes(e.target.id)) calc(); });
@@ -4794,28 +5223,62 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
           if (!b) return;
           if (b.dataset.dd) {
             const cur = parseInt($('#swDist', el).value, 10) || 0;
-            $('#swDist', el).value = Math.max(50, cur + Number(b.dataset.dd) * 50);
+            $('#swDist', el).value = Math.max(0, cur + Number(b.dataset.dd) * 50);
             calc();
+          } else if (b.dataset.con != null) {
+            c.on = b.dataset.con === '1';
+            redrawCrawl(`[data-con="${b.dataset.con}"]`);
+          } else if (b.dataset.cstep != null) {
+            c.step = +b.dataset.cstep;
+            const st = PS.CRAWL_STEPS[c.step];
+            c.done = st.reps; c.longest = st.dist;
+            redrawCrawl(`[data-cstep="${c.step}"]`);
+          } else if (b.dataset.cd) {
+            const st = PS.CRAWL_STEPS[c.step];
+            c.done = Math.max(0, Math.min(st.reps, c.done + Number(b.dataset.cd)));
+            $('#cDone', el).textContent = c.done;
+            $('#cNext', el).textContent = crawlNextTxt();
+          } else if (b.dataset.cl) {
+            c.longest = Math.max(25, Math.min(2000, c.longest + Number(b.dataset.cl) * 25));
+            $('#cLong', el).textContent = `${c.longest} m`;
+          } else if (b.dataset.cf) {
+            c.feel = b.dataset.cf;
+            redrawCrawl(`[data-cf="${c.feel}"]`);
           } else if (b.hasAttribute('data-del')) {
             if (!b.classList.contains('armed')) { b.classList.add('armed'); b.textContent = 'Tap again to delete'; return; }
             state.swims = state.swims.filter((x) => x.id !== entry.id);
             save(); closeSheet(true); render(); toast('Swim deleted.');
           } else if (b.hasAttribute('data-save')) {
             const r = read();
-            if (!(r.d > 0)) { $('#swDist', el).focus(); toast('Enter the distance in metres.'); return; }
-            if (!(r.time > 0)) { $('#swMin', el).focus(); toast('Enter your time.'); return; }
+            const crawlOn = showCrawl && c.on && c.done > 0;
+            if (r.d > 0 && !(r.time > 0)) { $('#swMin', el).focus(); toast('Enter your breaststroke time.'); return; }
+            if (!(r.d > 0) && !crawlOn) { $('#swDist', el).focus(); toast(showCrawl ? 'Enter the distance you swam, or log the crawl set.' : 'Enter the distance in metres.'); return; }
             const sv = parseInt($('#swStrokes', el).value, 10);
             const dv = $('#swDate', el).value || t;
             const e2 = entry || { id: uid() };
-            Object.assign(e2, { date: dv > t ? t : dv, status: 'done', dist: r.d, time: r.time, strokes: sv > 0 ? sv : null, note: $('#swNote', el).value.trim() });
+            Object.assign(e2, { date: dv > t ? t : dv, status: 'done', dist: r.d > 0 ? r.d : 0, time: r.d > 0 ? r.time : 0, strokes: r.d > 0 && sv > 0 ? sv : null, note: $('#swNote', el).value.trim() });
+            if (crawlOn) {
+              const st = PS.CRAWL_STEPS[c.step];
+              e2.crawl = { step: c.step, reps: st.reps, dist: st.dist, rest: st.rest, done: c.done, longest: c.longest, feel: c.feel };
+            } else delete e2.crawl;
             if (isNew) {
-              const fx = swimFocusTip();
-              if (fx) e2.focus = fx.id;
-              state.settings.swimFocus = null;
+              if (r.d > 0) {
+                const fx = swimFocusTip();
+                if (fx) e2.focus = fx.id;
+                state.settings.swimFocus = null;
+              }
+              if (isBon) { e2.bonus = true; bonus = null; }
               state.swims.push(e2);
             }
             save(); closeSheet(true); animateCard = isNew; render();
-            toast(isNew ? `Saved. ${km(r.d)} at ${PS.mmss((r.time / r.d) * 100)} per 100 m.` : 'Changes saved.', isNew ? () => { state.swims = state.swims.filter((x) => x.id !== e2.id); save(); render(); } : null);
+            let msg = 'Changes saved.';
+            if (isNew) {
+              const parts = [];
+              if (r.d > 0) parts.push(`${km(r.d)} at ${PS.mmss((r.time / r.d) * 100)} per 100 m.`);
+              if (crawlOn) { const cp2 = PS.crawlPlan(state); parts.push(`Next crawl set: ${PS.crawlSetTxt(cp2)}.`); }
+              msg = `Saved. ${parts.join(' ')}`;
+            }
+            toast(msg, isNew ? () => { state.swims = state.swims.filter((x) => x.id !== e2.id); save(); render(); } : null);
           }
         });
       },
@@ -4878,7 +5341,8 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
       <div class="rest-row"><span>Age <span class="muted small">for swim levels</span></span><div class="stepper"><button type="button" data-ag="-1" aria-label="One year less">−</button><input id="agIn" inputmode="numeric" autocomplete="off" value="${s.age || ''}" placeholder="Add" aria-label="Age in years"><span class="unit">yrs</span><button type="button" data-ag="1" aria-label="One year more">+</button></div></div>
       <div class="field"><span class="lbl" id="ldL">Lift days</span><div class="chips days" role="group" aria-labelledby="ldL">${chips('ld', s.liftDays)}</div><p class="muted small">Pick two. The first is Squat & Bench, the second is Deadlift & Press.</p></div>
       <div class="field"><span class="lbl" id="mdL">Morning run + bag</span><div class="chips days" role="group" aria-labelledby="mdL">${chips('md', s.morningDays)}</div></div>
-      <div class="field"><span class="lbl" id="swL">Swim day</span><div class="chips days" role="group" aria-labelledby="swL">${chips('sd', [s.swimDay])}</div></div>
+      <div class="field"><span class="lbl" id="swL">Swim day</span><div class="chips days" role="group" aria-labelledby="swL">${chips('sd', [s.swimDay])}</div>
+        <div class="rest-row"><span>Learning front crawl</span><button class="chip" type="button" data-crawl aria-pressed="${!!s.crawl}">${s.crawl ? 'On' : 'Off'}</button></div></div>
       <div class="field"><span class="lbl" id="bbL">Basketball day</span><div class="chips days" role="group" aria-labelledby="bbL">${chips('bd', [s.ballDay])}</div></div>
       <div class="block">
         <div class="field"><span class="lbl">Rest timer</span><p class="muted small">How long to rest after each kind of set during a workout.</p></div>
@@ -4963,6 +5427,9 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
             s.rest[k] = Math.max(lo, Math.min(hi, s.rest[k] + Number(b.dataset.d)));
             save();
             $(`#rest-${k}`, el).textContent = restTxt(s.rest[k]);
+          } else if (b.hasAttribute('data-crawl')) {
+            s.crawl = !s.crawl; save(); refresh();
+            const nb = $('[data-crawl]', el); if (nb) nb.focus({ preventScroll: true });
           } else if (b.hasAttribute('data-sound')) {
             s.sound = !s.sound; save();
             b.setAttribute('aria-pressed', String(s.sound));

@@ -1,5 +1,6 @@
-/* PUSH Strength offline support. Network first, so updates from GitHub show up; cache when offline. */
-const CACHE = 'push-strength-1.9.0';
+/* PUSH Strength offline support. Network first, so updates from GitHub show up; cache when offline.
+   Other apps live on the same site, so this only clears its own old caches (push-strength-...). */
+const CACHE = 'push-strength-2.0.0';
 const FILES = ["./", "index.html", "manifest.webmanifest", "apple-touch-icon.png", "icon-192.png", "icon-512.png", "icon-maskable-512.png"];
 
 self.addEventListener('install', (e) => {
@@ -9,7 +10,7 @@ self.addEventListener('install', (e) => {
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+      .then((keys) => Promise.all(keys.filter((k) => k.startsWith('push-strength-') && k !== CACHE).map((k) => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
