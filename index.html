@@ -1278,7 +1278,8 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
 
   /* ---------- scheduling ---------- */
   const isLiftDay = (s, d) => s.liftDays.includes(dow(d));
-  const liftDaysSorted = (s) => Array.from(new Set(s.liftDays)).sort((a, b) => a - b);
+  const monFirst = (d) => (d + 6) % 7;  // Monday 0 … Sunday 6
+  const liftDaysSorted = (s) => Array.from(new Set(s.liftDays)).sort((a, b) => monFirst(a) - monFirst(b));
   function firstLiftDay(s, from, inclusive) {
     let d = inclusive ? from : addDays(from, 1);
     for (let i = 0; i < 14; i++) {
@@ -1494,11 +1495,10 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
      started are left out, and today does not count as missed until it is over. */
   const mDays = (s) => (s.morningDays && s.morningDays.length ? s.morningDays : [0, 1, 2, 3, 4]);
   const isMorningDay = (s, d) => mDays(s).includes(dow(d));
-  /* The morning week starts on Sunday for a Sunday-to-Thursday style plan
-     (Sunday is a goal day and Saturday is not), otherwise on Monday. */
-  const morningWeekStartDay = (s) => (mDays(s).includes(0) && !mDays(s).includes(6) ? 0 : 1);
+  /* Weeks run Monday to Sunday everywhere, mornings included. */
+  const morningWeekStartDay = () => 1;
   const morningWeekStart = (s, d) => addDays(d, -((dow(d) - morningWeekStartDay(s) + 7) % 7));
-  /* Goal days in week order, e.g. Sun, Mon, Tue, Wed, Thu. */
+  /* Goal days in week order, Monday first. */
   const morningOrder = (s) => [0, 1, 2, 3, 4, 5, 6].map((k) => (morningWeekStartDay(s) + k) % 7).filter((d) => mDays(s).includes(d));
   function morningMap(state) {
     const m = {};
@@ -1747,8 +1747,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
   }
 
   /* ---------- the week at a glance ----------
-     Weeks start on the same day as the mornings grid (Sunday for a Sunday to
-     Thursday plan). Each activity counts what was done against what was planned,
+     Weeks run Monday to Sunday. Each activity counts what was done against what was planned,
      from the first week it was tracked. Days: done, skipped, today, planned
      (still to come), missed (a planned day that passed with nothing logged). */
   const WEEK_KINDS = ['lift', 'morning', 'swim', 'ball'];
@@ -2791,7 +2790,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
         <p><b>${tip.late} of your last ${tip.of} sessions happened a day late.</b> Moving your lift days to ${names} would give you the rest days you are actually getting.</p>
         <div class="acts">
           <button class="btn solid" type="button" data-act="tip-yes">Switch to ${names}</button>
-          <button class="btn quiet" type="button" data-act="tip-no">Keep ${state.settings.liftDays.slice().sort().map((d) => PS.DAY[d]).join(' + ')}</button>
+          <button class="btn quiet" type="button" data-act="tip-no">Keep ${state.settings.liftDays.slice().sort((a, b) => ((a + 6) % 7) - ((b + 6) % 7)).map((d) => PS.DAY[d]).join(' + ')}</button>
         </div>
       </section>`;
   }
