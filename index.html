@@ -865,12 +865,25 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
   font-size: 24px; line-height: 1; color: var(--ink);
 }
 .wo-sub { font-size: 15px; color: var(--ink-2); }
+/* reps as big as the weight, so they read from across the room */
+.wo-lift { font-size: clamp(36px, 10.5vw, 54px); }
+.wo-x { font-size: clamp(56px, 18vw, 88px); font-weight: 800; line-height: 1; letter-spacing: -0.02em; margin-top: -4px; }
+.wo-x .x { font-size: 0.6em; color: var(--ink-2); margin-right: 4px; vertical-align: 0.08em; }
+.wo-x small { font-size: 0.3em; font-weight: 700; color: var(--ink-2); margin-left: 6px; letter-spacing: 0; }
+.wo-big.word { font-size: clamp(30px, 9vw, 42px); line-height: 1.02; text-transform: uppercase; letter-spacing: 0.01em; }
+.wo-adj:disabled { opacity: 0.3; }
+.wo-goal {
+  display: flex; align-items: baseline; justify-content: center; flex-wrap: wrap; gap: 4px 10px;
+  border: 1px solid var(--line-2); border-radius: 14px; padding: 9px 16px; margin-top: 4px;
+  font-size: 13px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-2);
+}
+.wo-goal b { font-size: 24px; letter-spacing: 0; text-transform: none; color: var(--ink); }
 .wo-over {
   font-size: 14px; font-weight: 800; color: var(--bg); background: var(--ink);
   border-radius: 999px; padding: 6px 14px; font-variant-numeric: tabular-nums;
 }
 .wo-reps { display: flex; align-items: center; gap: 14px; font-size: 14px; color: var(--ink-2); }
-.wo-reps output { min-width: 44px; text-align: center; font-size: 22px; font-weight: 800; color: var(--ink); }
+.wo-reps output { min-width: 64px; text-align: center; font-size: 40px; line-height: 1; font-weight: 800; color: var(--ink); }
 .wo-go {
   width: 100%; height: 74px; margin-top: 6px; border-radius: 20px;
   background: var(--ink); color: var(--bg);
@@ -901,6 +914,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
 .wl-lbl { font-size: 12px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; }
 .wl-kg { font-size: 26px; font-weight: 800; line-height: 1.1; }
 .wl-kg small { font-size: 14px; margin-left: 2px; }
+.wl-x { margin-left: 10px; }
 .b-pic { grid-row: 2 / span 2; display: block; }
 .b-sleeve { fill: var(--paper-line); }
 .b-stop { fill: var(--paper-ink-2); }
@@ -915,6 +929,8 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
 .wo-adjrow .btn { height: 42px; min-width: 92px; }
 .wo-next { font-size: 14px; color: var(--ink-2); max-width: 34ch; }
 .wo-next b { color: var(--ink); }
+.wo-next-goal { display: block; }
+@media (max-height: 700px) and (orientation: portrait) { .wo-next-goal { display: none; } }
 .wo-fix {
   display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--ink-2);
   background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 4px 12px 4px 14px;
@@ -954,7 +970,11 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
   .wo-set, .wo-rest, .wo-fin { flex-direction: row; align-items: center; gap: 32px; }
   .wo-info, .wo-act { display: flex; flex-direction: column; align-items: center; gap: 8px; flex: 1 1 0; min-width: 0; }
   .wo-lift { font-size: clamp(28px, 9vh, 44px); }
-  .wo-big { font-size: clamp(42px, 15vh, 66px); }
+  .wo-big, .wo-x { font-size: clamp(40px, 14vh, 62px); }
+  .wo-big.word { font-size: clamp(24px, 7vh, 32px); }
+  .wo-lift { font-size: clamp(26px, 8vh, 40px); }
+  .wo-goal { padding: 6px 12px; margin-top: 0; }
+  .wo-goal b { font-size: 19px; }
   .ring, .wo-rest.has-feel .ring, .wo-rest.has-load .ring, .wo-rest.has-load.has-feel .ring { width: min(36vw, 46vh, 210px); }
   .ring-time, .wo-rest.has-feel .ring-time, .wo-rest.has-load .ring-time, .wo-rest.has-load.has-feel .ring-time { font-size: clamp(40px, 13vh, 58px); }
   .wo-load { padding: 8px 12px 9px; }
@@ -1080,14 +1100,82 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     return side > 0.01 ? null : out;
   }
 
-  function warmups(key, w) {
-    const steps = [[BAR, key === 'deadlift' ? 5 : 8]];
+  /* Warm-ups that only ever add plates. The working weight is split into plates per side,
+     heaviest first, chosen so that the first few plates make warm-ups near 60% and 80%
+     of it (60, 75 and 88% for a heavy deadlift). Each warm-up adds plates to the last one,
+     and the working sets add the rest. A few extra plates are fine; missing a warm-up is not. */
+  const RAMP_EXTRA_PLATE = 0.005, RAMP_MISS = 0.012;
+  function plateStacks(side, maxN) {
+    const out = [];
+    const rec = (left, from, acc) => {
+      if (left < 0.001) { out.push(acc.slice()); return; }
+      if (acc.length >= maxN) return;
+      for (let i = from; i < PLATES.length; i++) {
+        if (PLATES[i] <= left + 1e-9) { acc.push(PLATES[i]); rec(left - PLATES[i], i, acc); acc.pop(); }
+      }
+    };
+    rec(side, 0, []);
+    return out;
+  }
+  function warmupPlan(key, w) {
+    const first = [BAR, key === 'deadlift' ? 5 : 8, []];
     const ramp = key === 'deadlift' && w >= 70 ? [[0.6, 5], [0.75, 3], [0.88, 2]] : [[0.6, 5], [0.8, 3]];
-    for (const [pct, reps] of ramp) {
-      const x = roundTo(w * pct, 5);
-      if (x > steps[steps.length - 1][0] && x < w) steps.push([x, reps]);
+    const greedy = platesPerSide(w);
+    if (greedy == null) {
+      // a weight the plates can't make: warm-ups rounded to 5 kg
+      const steps = [first];
+      for (const [pct, reps] of ramp) {
+        const x = roundTo(w * pct, 5);
+        if (x > steps[steps.length - 1][0] && x < w) steps.push([x, reps, platesPerSide(x) || []]);
+      }
+      return { steps, work: null };
     }
-    return steps;
+    if (!greedy.length) return { steps: [first], work: [] };
+    let best = null;
+    for (const st of plateStacks((w - BAR) / 2, greedy.length + 3)) {
+      const pre = [];
+      let acc = 0;
+      st.forEach((p) => { acc += p; pre.push(BAR + 2 * acc); });
+      let bc = Infinity, bp = null;
+      const go = (r, minJ, cost, pick) => {
+        if (cost >= bc) return;
+        if (r === ramp.length) { bc = cost; bp = pick.slice(); return; }
+        for (let j = minJ; j < st.length - 1; j++) {
+          const f = pre[j] / w;
+          if (f > 0.93) break;
+          pick.push([j, r]);
+          go(r + 1, j + 1, cost + (f - ramp[r][0]) ** 2, pick);
+          pick.pop();
+        }
+        go(r + 1, minJ, cost + RAMP_MISS, pick);
+      };
+      go(0, 0, (st.length - greedy.length) * RAMP_EXTRA_PLATE, []);
+      if (!best || bc < best.c - 1e-9) best = { c: bc, st, pick: bp, pre };
+    }
+    const steps = [first].concat(best.pick.map(([j, r]) => [best.pre[j], ramp[r][1], best.st.slice(0, j + 1)]));
+    return { steps, work: best.st };
+  }
+  function warmups(key, w) {
+    return warmupPlan(key, w).steps.map(([x, r]) => [x, r]);
+  }
+
+  /* Plates per side for weight w, changing as few plates as possible from `cur`:
+     keep the inner plates that still fit, then add what's missing. */
+  function loadFrom(cur, w) {
+    const target = platesPerSide(w);
+    if (!cur || target == null) return target;
+    const side = (w - BAR) / 2;
+    let best = target, bestCost = cur.length + target.length;
+    let acc = 0;
+    for (let k = 0; k <= cur.length; k++) {
+      if (k > 0) acc += cur[k - 1];
+      if (acc > side + 1e-9) break;
+      const rest = platesPerSide(BAR + 2 * (side - acc));
+      if (rest == null) continue;
+      const cost = (cur.length - k) + rest.length;
+      if (cost < bestCost || (cost === bestCost && k > 0)) { bestCost = cost; best = cur.slice(0, k).concat(rest); }
+    }
+    return best;
   }
 
   function isClean(key, it) {
@@ -1174,12 +1262,18 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     const hist = pullHistory(state);
     if (!hist.length) return { reps: [5, 5, 5], add: 0, why: 'Max quality reps' };
     const last = hist[hist.length - 1].pull;
+    /* Up to 10 reps on the first set, then 2.5 kg more on a belt or vest.
+       With weight on, below 5 on the first set means 2.5 kg less. */
     const add = last.add || 0;
     if (last.reps[0] >= 10) {
       return { reps: last.reps.slice(), add: add + 2.5, last, why: `First set hit ${last.reps[0]}, so add 2.5 kg` };
     }
+    if (add > 0 && last.reps[0] < 5) {
+      const less = Math.max(0, add - 2.5);
+      return { reps: last.reps.slice(), add: less, last, why: `First set was ${last.reps[0]}, so 2.5 kg less` };
+    }
     const toGo = 10 - last.reps[0];
-    return { reps: last.reps.slice(), add, last, why: `${toGo} more on set one, then add weight` };
+    return { reps: last.reps.slice(), add, last, why: `${toGo} more on set one, then ${add ? '2.5 kg more' : 'add weight'}` };
   }
 
   /* ---------- scheduling ---------- */
@@ -1743,7 +1837,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
   root.PS = {
     iso, parse, addDays, dow, diff, today, byDate, weekStart, shortDate, dayDate,
     DAY, DAY_LONG, MON, MON_LONG, roundTo, kg, mmss, sum,
-    BAR, LIFTS, START, SESSIONS, platesPerSide, warmups, isClean, verdict,
+    BAR, LIFTS, START, SESSIONS, platesPerSide, warmups, warmupPlan, loadFrom, isClean, verdict,
     liftHistory, liftPlan, pullHistory, pullPlan,
     isLiftDay, slotType, nextLift, liftNotes, nextWeekly, liftDayTip,
     SWIM_GOALS, DRILLS, swimPace, swimsDone, swimPlan, swimProgress,
@@ -2664,9 +2758,10 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     const w = whenLabel(nl.due, t);
     const rows = plans.map((p) => {
       const L = PS.LIFTS[p.key];
-      const plates = PS.platesPerSide(p.w);
+      const wp = PS.warmupPlan(p.key, p.w);
+      const plates = wp.work;
       const plateTxt = plates == null ? '' : plates.length ? `${plates.map(PS.kg).join(' + ')} a side` : 'empty bar';
-      const warm = PS.warmups(p.key, p.w).map(([x, r]) => `${x === PS.BAR ? 'bar' : PS.kg(x)}×${r}`).join(' · ');
+      const warm = wp.steps.map(([x, r]) => `${x === PS.BAR ? 'bar' : PS.kg(x)}×${r}`).join(' · ');
       return `<div class="row">
           <span class="name">${L.name} <span class="pill" title="${esc(p.why)}">${esc(p.tag)}</span></span>
           <span class="val">${PS.kg(p.w)}<small>kg</small></span>
@@ -4403,21 +4498,36 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     const sess = PS.SESSIONS[nl.type];
     const steps = [];
     const w = {};
+    const pl = {};
     sess.lifts.forEach((k) => {
       const p = PS.liftPlan(state, k, asBonus ? t : nl.due);
       w[k] = p.w;
-      const warm = PS.warmups(k, p.w);
-      warm.forEach(([x, r], i) => steps.push({ k, kind: 'warm', n: i + 1, of: warm.length, w: x, reps: r }));
+      const wp = PS.warmupPlan(k, p.w);
+      pl[k] = wp.work;
+      wp.steps.forEach(([x, r, ps], i) => steps.push({ k, kind: 'warm', n: i + 1, of: wp.steps.length, w: x, reps: r, pl: ps }));
       for (let i = 0; i < p.sets; i++) steps.push({ k, kind: 'work', n: i + 1, of: p.sets, reps: p.reps });
     });
     const pp = PS.pullPlan(state);
     for (let i = 0; i < 3; i++) steps.push({ k: 'pull', kind: 'work', n: i + 1, of: 3, reps: pp.reps[i] || pp.reps[pp.reps.length - 1] || 5 });
     const now = Date.now();
-    return { v: 1, type: nl.type, started: now, touched: now, steps, i: 0, phase: 'set', restEnd: 0, restTotal: 0, restOver: 0, last: -1, done: {}, effort: {}, w, add: pp.add || 0, pending: null, bonus: !!asBonus };
+    return { v: 1, type: nl.type, started: now, touched: now, steps, i: 0, phase: 'set', restEnd: 0, restTotal: 0, restOver: 0, last: -1, done: {}, effort: {}, w, pl, add: pp.add || 0, pending: null, bonus: !!asBonus };
   }
 
   const liftName = (k) => (k === 'pull' ? 'Pull-ups' : PS.LIFTS[k].name);
   const stepWeight = (st) => (st.kind === 'warm' ? st.w : wo.w[st.k]);
+  const sideKg = (ps) => PS.BAR + 2 * PS.sum(ps);
+  /* Plates per side for step i: the planned stack when the weight is as planned,
+     otherwise the fewest changes from the step before it on the same lift. */
+  function stepPlates(i) {
+    const st = wo.steps[i];
+    if (!st || st.k === 'pull') return null;
+    const w = stepWeight(st);
+    const planned = st.kind === 'warm' ? st.pl : (wo.pl && wo.pl[st.k]);
+    if (planned && Math.abs(sideKg(planned) - w) < 0.01) return planned;
+    const j = i - 1;
+    const prev = j >= 0 && wo.steps[j].k === st.k ? stepPlates(j) : null;
+    return PS.loadFrom(prev, w);
+  }
   function restFor(st) {
     const r = state.settings.rest;
     if (st.kind === 'warm') return r.warm;
@@ -4456,10 +4566,10 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
   function loadHTML(nx) {
     if (!nx || nx.k === 'pull') return '';
     const w = stepWeight(nx);
-    const target = PS.platesPerSide(w);
+    const target = stepPlates(wo.i);
     const prev = wo.last >= 0 ? wo.steps[wo.last] : null;
     const same = prev && prev.k === nx.k && prev.k !== 'pull';
-    const cur = same ? PS.platesPerSide(stepWeight(prev)) : null;
+    const cur = same ? stepPlates(wo.last) : null;
     let keepN = 0, change = '';
     if (target && cur) {
       while (keepN < cur.length && keepN < target.length && cur[keepN] === target[keepN]) keepN++;
@@ -4472,7 +4582,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     const each = target == null ? 'Check the plates' : target.length ? `${platesTxt(target)} a side` : 'Empty bar';
     const pic = target && target.length ? barSVG(target, keepN) : '';
     return `<div class="wo-load${pic ? '' : ' no-pic'}" aria-label="Load the bar: ${PS.kg(w)} kg, ${esc(each)}${change ? `. ${esc(change)}` : ''}">
-        <div class="wl-top"><span class="wl-lbl">Load the bar</span><span class="wl-kg">${PS.kg(w)}<small>kg</small></span></div>
+        <div class="wl-top"><span class="wl-lbl">Load the bar</span><span class="wl-kg">${PS.kg(w)}<small>kg</small><span class="wl-x">×${nx.reps}</span></span></div>
         ${pic}
         <p class="wl-each">${esc(each)}</p>
         ${change ? `<p class="wl-change">${esc(change)}</p>` : ''}
@@ -4619,19 +4729,31 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     let what;
     if (st.k === 'pull') {
       const prevPull = PS.pullPlan(state).last;
-      what = `<div class="wo-big">${wo.add ? `+${PS.kg(wo.add)}<small>kg</small>` : 'Max reps'}</div>
-        <p class="wo-sub">${wo.add ? 'Max reps with the extra weight' : 'Bodyweight'}${prevPull ? ` · last time ${prevPull.reps.join(' · ')}` : ''}</p>`;
+      const lastTxt = prevPull ? `Last time ${prevPull.reps.join(' · ')}${prevPull.add ? ` with +${PS.kg(prevPull.add)} kg` : ''}` : '';
+      what = `<div class="wo-wrow">
+          <button class="wo-adj" type="button" data-wo="a-" aria-label="2.5 kg less extra weight"${wo.add ? '' : ' disabled'}>−</button>
+          <div class="wo-big${wo.add ? '' : ' word'}">${wo.add ? `+${PS.kg(wo.add)}<small>kg</small>` : 'Body<br>weight'}</div>
+          <button class="wo-adj" type="button" data-wo="a+" aria-label="2.5 kg more extra weight">+</button>
+        </div>
+        <div class="wo-x">Max<small>reps</small></div>
+        <p class="wo-sub">${wo.add ? 'On a dip belt or in a vest' : 'Tap + to add weight'}${lastTxt ? ` · ${lastTxt}` : ''}</p>`;
     } else {
       const w = stepWeight(st);
-      const plates = PS.platesPerSide(w);
+      const plates = stepPlates(i);
       const pt = plates == null ? '' : plates.length ? `${plates.map(PS.kg).join(' + ')} a side` : 'Empty bar';
       const adj = st.kind === 'work';
+      const work = workIdx(st.k).length;
+      const goal = st.kind === 'warm'
+        ? `<p class="wo-goal"><span>Today's goal</span><b>${PS.kg(wo.w[st.k])} kg × ${wo.steps[workIdx(st.k)[0]].reps}</b><span>${work} ${work === 1 ? 'set' : 'sets'}</span></p>`
+        : '';
       what = `<div class="wo-wrow">
           ${adj ? '<button class="wo-adj" type="button" data-wo="w-" aria-label="2.5 kg less">−</button>' : ''}
           <div class="wo-big">${PS.kg(w)}<small>kg</small></div>
           ${adj ? '<button class="wo-adj" type="button" data-wo="w+" aria-label="2.5 kg more">+</button>' : ''}
         </div>
-        <p class="wo-sub">× ${st.reps} reps${pt ? ` · ${pt}` : ''}</p>`;
+        <div class="wo-x" aria-label="${st.reps} reps"><span class="x">×</span>${st.reps}<small>reps</small></div>
+        ${pt ? `<p class="wo-sub">${pt}</p>` : ''}
+        ${goal}`;
     }
     const reps = st.kind === 'work' ? `<div class="wo-reps"><span>${st.k === 'pull' ? 'Reps done' : 'Reps done'}</span>
         <div class="stepper"><button type="button" data-wo="r-" aria-label="One rep fewer">−</button><output class="wo-pend" aria-live="polite">${pending}</output><button type="button" data-wo="r+" aria-label="One rep more">+</button></div></div>` : '';
@@ -4675,7 +4797,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
           <div class="wo-adjrow"><button class="btn line" type="button" data-wo="t-">−15 s</button><button class="btn line" type="button" data-wo="t+">+15 s</button></div>
         </div>
         <div class="wo-act">
-          <p class="wo-next">Next: <b>${esc(stepLine(nx))}</b></p>
+          <p class="wo-next">Next: <b>${esc(stepLine(nx))}</b>${nx.kind === 'warm' ? `<span class="wo-next-goal">Today's goal: <b>${PS.kg(wo.w[nx.k])} kg × ${wo.steps[workIdx(nx.k)[0]].reps}</b>, ${plural(workIdx(nx.k).length, 'set')}</span>` : ''}</p>
           ${load}${fix}${feel}
           <button class="wo-go" type="button" data-wo="skiprest">Start next set</button>
           <div class="wo-links"><button class="link" type="button" data-wo="undo">Undo last set</button></div>
@@ -4828,6 +4950,12 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
       case 'w-': case 'w+': {
         wo.w[st.k] = Math.max(PS.BAR, PS.roundTo(wo.w[st.k] + (a === 'w+' ? 2.5 : -2.5), 1.25));
         saveWorkout(); renderWorkout();
+        return;
+      }
+      case 'a-': case 'a+': {
+        wo.add = Math.max(0, PS.roundTo((wo.add || 0) + (a === 'a+' ? 2.5 : -2.5), 1.25));
+        saveWorkout(); renderWorkout();
+        announce(wo.add ? `Plus ${PS.kg(wo.add)} kilograms` : 'Bodyweight');
         return;
       }
       case 'prev':

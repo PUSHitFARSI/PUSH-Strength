@@ -1,6 +1,6 @@
 /* PUSH Strength offline support. Network first, so updates from GitHub show up; cache when offline.
    Other apps live on the same site, so this only clears its own old caches (push-strength-...). */
-const CACHE = 'push-strength-2.0.0';
+const CACHE = 'push-strength-2.1.0';
 const FILES = ["./", "index.html", "manifest.webmanifest", "apple-touch-icon.png", "icon-192.png", "icon-512.png", "icon-maskable-512.png"];
 
 self.addEventListener('install', (e) => {
