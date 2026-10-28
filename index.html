@@ -818,6 +818,16 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
 .wd-row b { text-align: right; color: var(--ink); font-variant-numeric: tabular-nums; }
 .wd-bar { height: 10px; border-radius: 99px; background: var(--raised); overflow: hidden; }
 .wd-bar i { display: block; height: 100%; background: var(--ink); border-radius: 0 4px 4px 0; }
+/* mornings: total run distance and per month */
+.dist-panel { display: grid; gap: 14px; }
+.dist-top { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.dist-big { font-size: 44px; font-weight: 800; line-height: 1; letter-spacing: -0.02em; }
+.dist-big small { font-size: 18px; font-weight: 700; color: var(--ink-3); margin-left: 3px; letter-spacing: 0; }
+.dist-sub { font-size: 14px; color: var(--ink-2); }
+.dist-months { display: grid; gap: 9px; }
+.dm-row { display: grid; grid-template-columns: 52px minmax(0, 1fr) 62px 52px; align-items: center; gap: 10px; font-size: 13px; color: var(--ink-2); }
+.dm-row b { text-align: right; color: var(--ink); font-variant-numeric: tabular-nums; }
+.dm-row small { text-align: right; font-size: 12px; color: var(--ink-3); }
 .v-table.static tbody tr { cursor: default; }
 
 /* ---------- workout ---------- */
@@ -3650,8 +3660,40 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
         ${secHead('<span id="mRunH">Run</span>', '<span class="aside">Lower is faster</span>')}
         ${chartPanel(runSeries(), lr ? `Last <b>${PS.mmss(PS.runPace(lr))}</b> per km · ${fmtKm(lr.run.km)} km in ${PS.mmss(lr.run.time)}` : 'Log a run time to see your pace here', lr ? `<div class="legend">${bandKey(`Levels for ${ageTxt()}`)}</div>` : '')}
       </section>
+      ${runDistanceHTML(t)}
       ${runLevelHTML()}
       <section aria-labelledby="calH">${calendarHTML(t, 'morning')}</section>`;
+  }
+
+  /* Total kilometres since the first logged run, and per month (newest first). */
+  function runDistanceHTML(t) {
+    const runs = PS.morningRuns(state).filter((e) => e.date <= t);
+    if (!runs.length) return '';
+    const total = runs.reduce((a, e) => a + e.run.km, 0);
+    const by = {};
+    runs.forEach((e) => { const k = e.date.slice(0, 7); (by[k] = by[k] || { km: 0, n: 0 }); by[k].km += e.run.km; by[k].n++; });
+    const months = [];
+    let ym = t.slice(0, 7);
+    const first = runs[0].date.slice(0, 7);
+    while (ym >= first && months.length < 24) {
+      months.push({ ym, km: by[ym] ? by[ym].km : 0, n: by[ym] ? by[ym].n : 0 });
+      const [y, m] = ym.split('-').map(Number);
+      ym = m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, '0')}`;
+    }
+    const max = Math.max(...months.map((x) => x.km), 0.1);
+    const r1 = (x) => fmtKm(Math.round(x * 10) / 10);
+    const rows = months.map((x) => {
+      const [y, m] = x.ym.split('-').map(Number);
+      const lbl = `${PS.MON[m - 1]}${y !== Number(t.slice(0, 4)) ? ` ${String(y).slice(2)}` : ''}`;
+      return `<div class="dm-row"><span>${lbl}</span><span class="wd-bar"><i style="width:${((x.km / max) * 100).toFixed(1)}%"></i></span><b>${r1(x.km)} km</b><small>${plural(x.n, 'run')}</small></div>`;
+    }).join('');
+    return `<section aria-labelledby="mDistH">
+        ${secHead('<span id="mDistH">Distance</span>', `<span class="aside">Since ${PS.shortDate(runs[0].date)}</span>`)}
+        <div class="panel dist-panel">
+          <div class="dist-top"><span class="dist-big">${r1(total)}<small>km</small></span><span class="dist-sub">in total · ${plural(runs.length, 'run')}</span></div>
+          <div class="dist-months">${rows}</div>
+        </div>
+      </section>`;
   }
 
   function openMorningViewer(fromEl) {
