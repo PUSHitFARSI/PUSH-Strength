@@ -1637,6 +1637,22 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
       [1929, 1538, 1212, 956, 762], [2002, 1595, 1258, 992, 791], [2080, 1658, 1307, 1031, 822], [2165, 1725, 1361, 1073, 855],
       [2257, 1799, 1418, 1118, 891], [2357, 1879, 1481, 1168, 931], [2475, 1973, 1556, 1227, 978]],
   };
+  /* Running: runninglevel.com male 1 mile and 5 km times (seconds) by age. */
+  const RUN_STD = {
+    age: [20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70],
+    mile: [[519, 429, 363, 316, 282], [519, 429, 363, 316, 282], [519, 429, 363, 316, 282], [537, 443, 376, 327, 291], [555, 459, 389, 338, 301], [576, 475, 403, 351, 312], [598, 493, 418, 364, 324], [621, 513, 435, 378, 337], [647, 534, 453, 394, 351], [680, 562, 476, 414, 369], [728, 601, 510, 443, 395]],
+    k5: [[1838, 1578, 1361, 1186, 1050], [1838, 1578, 1361, 1186, 1050], [1850, 1588, 1370, 1194, 1057], [1884, 1616, 1394, 1216, 1076], [1941, 1666, 1437, 1252, 1108], [2015, 1729, 1491, 1300, 1151], [2095, 1798, 1551, 1352, 1196], [2182, 1872, 1615, 1408, 1246], [2276, 1953, 1684, 1468, 1300], [2378, 2041, 1760, 1535, 1358], [2497, 2143, 1848, 1611, 1426]],
+  };
+  const MILE_KM = 1.609344;
+  /* Pace per km (seconds) for Beginner..Elite over a run of `km` (1.6 to 5 km),
+     between the mile and 5 km paces on a log-distance scale. */
+  function runStandards(age, km) {
+    const a = Math.max(20, Math.min(70, age || 25));
+    const d = Math.max(MILE_KM, Math.min(5, km || 2));
+    const f = Math.log(d / MILE_KM) / Math.log(5 / MILE_KM);
+    const m = interpRow(RUN_STD.age, RUN_STD.mile, a), k = interpRow(RUN_STD.age, RUN_STD.k5, a);
+    return m.map((v, i) => v / MILE_KM + (k[i] / 5 - v / MILE_KM) * f);
+  }
   /* Breaststroke is about 22% slower than freestyle (men's 100 m and 200 m world records). */
   const BREAST_FACTOR = 1.22;
   /* Share of a one-rep max you can lift for a given number of reps (strengthlevel.com table). */
@@ -1841,7 +1857,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     isLiftDay, slotType, nextLift, liftNotes, nextWeekly, liftDayTip,
     SWIM_GOALS, DRILLS, swimPace, swimsDone, swimPlan, swimProgress,
     CRAWL_STEPS, crawlSetTxt, crawlLog, crawlNext, crawlPlan,
-    LEVELS, LEVEL_PCT, REP_PCT, BREAST_FACTOR, strengthStandards, swimStandards, est1RM, bestMax, bestPull, levelOf,
+    LEVELS, LEVEL_PCT, REP_PCT, BREAST_FACTOR, strengthStandards, swimStandards, runStandards, est1RM, bestMax, bestPull, levelOf,
     isMorningDay, morningWeekStart, morningDue, morningRuns, runPace, morningStats, morningMonths, morningWeekdays, morningGrid,
     ballStats, GAME_ISSUES, gamePatterns, WEEK_KINDS, weekView, weekList, seed,
   };
@@ -2930,9 +2946,9 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
   /* Level bands in the chart's own units: 5-rep working weight for a lift,
      reps in one set for pull-ups, 1 km time for the swim. */
   function chartBands(key) {
-    if (key === 'swim') {
-      const r = swimLevel();
-      return { t: r.std, lowerBetter: true, next: r.lv.idx < 4 ? r.lv.idx + 1 : null };
+    if (key === 'swim' || key === 'run') {
+      const r = key === 'swim' ? swimLevel() : runLevel();
+      return { t: r.std, lowerBetter: true, next: r.v != null && r.lv.idx < 4 ? r.lv.idx + 1 : null };
     }
     const r = liftLevel(key);
     const t = key === 'pull' ? r.std : r.std.map((v) => v * PS.REP_PCT[5]);
@@ -2947,6 +2963,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
         const pace = PS.runPace(e);
         return { x: e.date, y: Math.round(pace), e, tip: `<b>${PS.mmss(pace)} per km</b>${fmtKm(e.run.km)} km in ${PS.mmss(e.run.time)} · ${PS.dayDate(e.date)}` };
       }),
+      bands: chartBands('run'),
       fmt: (v) => PS.mmss(v), label: (v) => PS.mmss(v),
       empty: 'Log a run time to start the line.', aria: 'Run pace per kilometre',
     };
@@ -3272,7 +3289,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     if (s.kind === 'crawl') return `${plural(n, 'crawl set')} · Longest ${Math.max(...s.points.map((p) => p.y))} m without stopping`;
     if (s.kind === 'run') {
       const km = s.points.reduce((a, p) => a + p.e.run.km, 0);
-      return `${plural(n, 'run')} · Best ${PS.mmss(Math.min(...s.points.map((p) => p.y)))} per km · ${fmtKm(Math.round(km * 10) / 10)} km in total`;
+      return `${plural(n, 'run')} · Best ${PS.mmss(Math.min(...s.points.map((p) => p.y)))} per km · ${nextLevelTxt('run')}`;
     }
     if (s.metric === 't1k') return `${plural(n, 'swim')} · Best ${PS.mmss(Math.min(...s.points.map((p) => p.y)))} · ${nextLevelTxt('swim')}`;
     if (s.metric === 'strokes') return `${plural(n, 'swim')} · Fewest ${Math.min(...s.points.map((p) => p.y))} strokes`;
@@ -3631,8 +3648,9 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
       </section>
       <section aria-labelledby="mRunH">
         ${secHead('<span id="mRunH">Run</span>', '<span class="aside">Lower is faster</span>')}
-        ${chartPanel(runSeries(), lr ? `Last <b>${PS.mmss(PS.runPace(lr))}</b> per km · ${fmtKm(lr.run.km)} km in ${PS.mmss(lr.run.time)}` : 'Log a run time to see your pace here')}
+        ${chartPanel(runSeries(), lr ? `Last <b>${PS.mmss(PS.runPace(lr))}</b> per km · ${fmtKm(lr.run.km)} km in ${PS.mmss(lr.run.time)}` : 'Log a run time to see your pace here', lr ? `<div class="legend">${bandKey(`Levels for ${ageTxt()}`)}</div>` : '')}
       </section>
+      ${runLevelHTML()}
       <section aria-labelledby="calH">${calendarHTML(t, 'morning')}</section>`;
   }
 
@@ -3797,7 +3815,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     });
   }
 
-  /* ---------- levels: strength and swim standards ---------- */
+  /* ---------- levels: strength, swim and running standards ---------- */
   const LV = PS.LEVELS;
   const lvName = (idx) => (idx < 0 ? 'Starting out' : LV[idx]);
   const kgR = (x) => String(Math.round(x));
@@ -3805,6 +3823,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     lift: ['Strength Level', 'https://strengthlevel.com/strength-standards/male/kg'],
     pull: ['Strength Level', 'https://strengthlevel.com/strength-standards/pull-ups'],
     swim: ['Swimming Level', 'https://swimminglevel.com/swimming-times/1000m-times'],
+    run: ['Running Level', 'https://runninglevel.com/running-times/5k-times'],
   };
   const LV_SCALE = '<div class="lv-scale" aria-hidden="true"><span style="left:20%">B</span><span style="left:40%">N</span><span style="left:60%">I</span><span style="left:80%">A</span><span style="left:100%">E</span></div>';
   const LV_KEY = '<p class="lv-key">B Beginner · N Novice · I Intermediate · A Advanced · E Elite</p>';
@@ -3825,6 +3844,31 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     const bestE = done.length ? done.reduce((a, e) => (PS.swimPace(e) < PS.swimPace(a) ? e : a)) : null;
     const v = bestE ? PS.swimPace(bestE) * 10 : (base.time * 1000) / base.dist;
     return { k: 'swim', name: '1 km breaststroke', std, best: bestE, v, lv: PS.levelOf(v, std, true) };
+  }
+
+  /* Run pace against runners over your usual distance (the median of your runs, 2 km to start). */
+  function runLevel() {
+    const runs = PS.morningRuns(state);
+    const kms = runs.map((e) => e.run.km).sort((a, b) => a - b);
+    const km = kms.length ? kms[Math.floor(kms.length / 2)] : runDefaults().km;
+    const std = PS.runStandards(state.settings.age, km);
+    const bestE = runs.length ? runs.reduce((a, e) => (PS.runPace(e) < PS.runPace(a) ? e : a)) : null;
+    const v = bestE ? PS.runPace(bestE) : null;
+    return { k: 'run', name: `Run pace, ${fmtKm(Math.round(km * 10) / 10)} km`, km, std, best: bestE, v, lv: v == null ? { idx: -1, pos: 0 } : PS.levelOf(v, std, true) };
+  }
+  function runLevelHTML() {
+    const r = runLevel();
+    const nx = r.lv.idx + 1;
+    const sub = r.v == null ? 'Log a run time to see your level'
+      : `<span>Best <b>${PS.mmss(r.v)}</b> per km · ${nx <= 4 ? `${LV[nx]} at ${PS.mmss(r.std[nx])}` : 'Top level'}</span>`;
+    return `<section aria-labelledby="rlvH">
+        ${secHead('<span id="rlvH">Level</span>', `<button class="link" type="button" data-act="you">Vs ${ageTxt()} · Change</button>`)}
+        <div class="panel lv-panel">
+          ${LV_SCALE}
+          ${lvRowHTML(r, sub)}
+          ${LV_KEY}
+        </div>
+      </section>`;
   }
 
   function lvRowHTML(r, sub) {
@@ -3874,11 +3918,12 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
 
   /* "Novice at 80 kg × 5": the next level, in the terms you train in. */
   function nextLevelTxt(key) {
-    const r = key === 'swim' ? swimLevel() : liftLevel(key);
+    const r = key === 'swim' ? swimLevel() : key === 'run' ? runLevel() : liftLevel(key);
     if (r.v == null) return '';
     const nx = r.lv.idx + 1;
     if (nx > 4) return 'Elite level';
     if (key === 'swim') return `${LV[nx]} at ${PS.mmss(r.std[nx])}`;
+    if (key === 'run') return `${LV[nx]} at ${PS.mmss(r.std[nx])}\u00a0per\u00a0km`;
     if (key === 'pull') return `${LV[nx]} at ${r.std[nx]}\u00a0reps`;
     return `${LV[nx]} at ${PS.kg(target5(r.std[nx]))}\u00a0kg\u00a0×\u00a05`;
   }
@@ -3886,15 +3931,31 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
   /* Detail: where you stand, what the next level takes, and the full table. */
   function openLevelSheet(k) {
     const t = T();
-    const isSwim = k === 'swim';
-    const r = isSwim ? swimLevel() : liftLevel(k);
+    const isSwim = k === 'swim', isRun = k === 'run';
+    const r = isSwim ? swimLevel() : isRun ? runLevel() : liftLevel(k);
     const has = r.v != null;
     const idx = r.lv.idx, nx = idx + 1;
     const bw = PS.kg(state.settings.bodyWeight);
-    const src = isSwim ? LV_SRC.swim : k === 'pull' ? LV_SRC.pull : LV_SRC.lift;
+    const src = isSwim ? LV_SRC.swim : isRun ? LV_SRC.run : k === 'pull' ? LV_SRC.pull : LV_SRC.lift;
     const youRow = (cells) => `<tr class="on"><td>You</td>${cells}</tr>`;
     let who, best = '', next = '', head, rows = [], how;
-    if (isSwim) {
+    if (isRun) {
+      const dk = fmtKm(Math.round(r.km * 10) / 10);
+      who = `${idx < 0 ? 'Slower than the Beginner pace' : `Faster than ${PS.LEVEL_PCT[idx]}% of runners`} over ${dk} km among ${ageTxt()}.`;
+      best = has
+        ? `Your best is <b>${PS.mmss(r.v)} per km</b>, ${fmtKm(r.best.run.km)} km in ${PS.mmss(r.best.run.time)} on ${PS.dayDate(r.best.date)}.`
+        : 'Log a run time on a morning to see your level.';
+      next = nx <= 4
+        ? `<b>${LV[nx]}</b> at ${PS.mmss(r.std[nx])} per km, which is ${PS.mmss(r.std[nx] * r.km)} for ${dk} km.${has ? ` That is ${Math.max(1, Math.round(r.v - r.std[nx]))} seconds per km faster than your best.` : ''}`
+        : 'You are at the top level.';
+      head = ['Level', 'Per km', `${dk} km`, 'Faster than'];
+      r.std.forEach((v, i) => rows.push(`<tr><td>${LV[i]}</td><td class="n">${PS.mmss(v)}</td><td class="n">${PS.mmss(v * r.km)}</td><td class="n">${PS.LEVEL_PCT[i]}%</td></tr>`));
+      if (has) {
+        const pos = r.std.findIndex((v) => v < r.v);
+        rows.splice(pos < 0 ? rows.length : pos, 0, youRow(`<td class="n">${PS.mmss(r.v)}</td><td class="n">${PS.mmss(r.v * r.km)}</td><td class="n"></td>`));
+      }
+      how = `Paces are from Running Level for ${ageTxt()}. It grades race times over a mile and 5 km, so the app sets the levels for ${dk} km, your usual run, in between the two. These are race efforts, and an easy morning run will sit a level or so below what you could race. Set your age in Settings to compare with your own age group.`;
+    } else if (isSwim) {
       who = `${idx < 0 ? 'Slower than the Beginner time' : `Faster than ${PS.LEVEL_PCT[idx]}% of swimmers`} among ${ageTxt()}.`;
       best = r.best
         ? `Your best is <b>${PS.mmss(r.v)}</b> for 1 km (${PS.mmss(r.v / 10)} per 100 m), from ${PS.dayDate(r.best.date)}.`
@@ -3949,15 +4010,15 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
       <div class="lv-big">${LV_SCALE}${lvBar(has ? r.lv.pos : 0)}${LV_KEY}</div>
       <div class="tip-sec"><h3>${r.best || !isSwim ? 'Your best' : 'Your time'}</h3><p>${best}</p></div>
       ${has ? `<div class="tip-sec"><h3>Next level</h3><p>${next}</p></div>` : ''}
-      <div class="tip-sec"><h3>${isSwim ? `Standards, ${ageTxt()}` : `Standards at ${bw} kg`}</h3>
+      <div class="tip-sec"><h3>${isSwim || isRun ? `Standards, ${ageTxt()}` : `Standards at ${bw} kg`}</h3>
         <div class="lv-table-wrap"><table class="v-table static lv-table"><thead><tr>${head.map((h, i) => `<th scope="col"${i ? ' class="n"' : ''}>${h}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table></div>
       </div>
       <div class="tip-sec"><h3>How this works</h3><p>${how}</p>
         <p class="lv-src"><a href="${src[1]}" target="_blank" rel="noopener">See the full standards on ${src[0]}</a></p>
-        <p><button class="link" type="button" data-act="you">${isSwim ? 'Set your age' : 'Change your body weight'}</button></p>
+        <p><button class="link" type="button" data-act="you">${isSwim || isRun ? 'Set your age' : 'Change your body weight'}</button></p>
       </div>`;
     openSheet({
-      title: isSwim ? 'Swim level' : `${esc(r.name)} level`,
+      title: isSwim ? 'Swim level' : isRun ? 'Run level' : `${esc(r.name)} level`,
       closeLabel: 'Close',
       body,
       mount: (el) => {
@@ -5463,7 +5524,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     const chips = (name, sel) => [1, 2, 3, 4, 5, 6, 0].map((d) => `<button class="chip" type="button" data-${name}="${d}" aria-pressed="${sel.includes(d)}" aria-label="${PS.DAY_LONG[d]}">${PS.DAY[d]}</button>`).join('');
     const restRow = (key, label) => `<div class="rest-row"><span>${label}</span><div class="stepper sm"><button type="button" data-rest="${key}" data-d="-15" aria-label="${label} 15 seconds less">−</button><output id="rest-${key}">${restTxt(s.rest[key])}</output><button type="button" data-rest="${key}" data-d="15" aria-label="${label} 15 seconds more">+</button></div></div>`;
     const body = () => `
-      <div class="field you"><span class="lbl">You</span><p class="muted small">Used only to compare you with the strength and swim standards. Nothing is tracked over time.</p></div>
+      <div class="field you"><span class="lbl">You</span><p class="muted small">Used only to compare you with the strength, swim and running standards. Nothing is tracked over time.</p></div>
       <div class="rest-row"><span>Body weight</span><div class="stepper"><button type="button" data-bw="-1" aria-label="Half a kilo less">−</button><input id="bwIn" inputmode="decimal" autocomplete="off" value="${PS.kg(s.bodyWeight)}" aria-label="Body weight in kilograms"><span class="unit">kg</span><button type="button" data-bw="1" aria-label="Half a kilo more">+</button></div></div>
       <div class="rest-row"><span>Age <span class="muted small">for swim levels</span></span><div class="stepper"><button type="button" data-ag="-1" aria-label="One year less">−</button><input id="agIn" inputmode="numeric" autocomplete="off" value="${s.age || ''}" placeholder="Add" aria-label="Age in years"><span class="unit">yrs</span><button type="button" data-ag="1" aria-label="One year more">+</button></div></div>
       <div class="field"><span class="lbl" id="ldL">Lift days</span><div class="chips days" role="group" aria-labelledby="ldL">${chips('ld', s.liftDays)}</div><p class="muted small">Pick two. The first is Squat & Bench, the second is Deadlift & Press.</p></div>
