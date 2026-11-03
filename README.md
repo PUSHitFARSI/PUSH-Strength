@@ -35,6 +35,18 @@ It works offline after the first open.
 - **Basketball**: swipe right after a game, then note how it went (energy, cramp, reflux) and what you ate: when, how much, what, and electrolytes, banana and so on. Everything is optional. **Patterns** compares games with and without each habit once you have 3 games with details. Tap a game or a day in the calendar to edit or delete it.
 - **Settings** (gear icon): set your body weight and age for the levels, change lift, morning, swim and game days, turn front crawl practice on or off, set rest times, turn the beep on or off, copy a backup, or restore one.
 
+## How the weights move
+
+A step is 5 kg for squat and deadlift, and 2.5 kg for bench and overhead press.
+
+- **Clean**: one step up next time. **Easy**: two steps, unless one of the two sessions before it was hard.
+- **Grind** or a missed rep: the same weight next time.
+- The app never goes past a weight you struggled with (missed reps or a grind) until you've done it cleanly. Going up stops at that weight, so you retry it first.
+- If a jump of more than one step ends in missed reps or a grind, the next session goes back to one step above where you jumped from.
+- Missed reps twice in a row at the same weight, or three hard sessions there with a miss among them: 10% lighter, then back up a step at a time. On deadlift, the first stall cuts to one heavy set instead.
+- Well short of the reps (under 80%): back to your last clean weight.
+- Two weeks or more off: 10% lighter.
+
 ## Your data
 
 Everything you log stays on your phone. Nothing is sent anywhere. Copy a backup from Settings now and then and keep it in Notes.

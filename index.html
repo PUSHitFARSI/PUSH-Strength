@@ -1217,32 +1217,76 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     return `${w} weeks`;
   }
 
-  /* The weight and sets for a lift on a given date, with the reason. */
+  /* The weight and sets for a lift on a given date, with the reason.
+     A step is the lift's increment (5 kg for squat and deadlift, 2.5 kg for bench and press).
+     - Clean: one step up. Easy: two steps, unless either of the two sessions before was hard.
+     - Never past a hard weight: a weight with missed reps or a grind caps the next increase
+       until it has been done cleanly (or every rep done at a heavier weight). Going up stops
+       there, so you retry it first.
+     - Missed reps or a grind: repeat, except right after a jump of more than one step, when it
+       goes back to one step above the last weight before the jump.
+     - Stuck: missed reps twice in a row at one weight, or three hard sessions in a row there
+       with missed reps in one of them: 10% lighter, then back up a step at a time. Grinds alone
+       just repeat, since every rep was done.
+     - Well short (under 80% of the reps): back to the last clean weight.
+     - Two weeks or more off: 10% lighter. */
+  const HARD = ['miss', 'drop', 'grind'];
+  const OK_V = ['clean', 'easy'];
   function liftPlan(state, key, onDate, extra) {
     const L = LIFTS[key];
     let hist = liftHistory(state, key);
     if (extra) hist = hist.concat([extra]).sort(byDate);
     if (!hist.length) {
-      return { key, w: START[key], sets: L.sets, reps: L.reps, tag: 'Start', why: 'Starting weight', verdict: null, eased: false };
+      return { key, w: START[key], sets: L.sets, reps: L.reps, tag: 'Start', why: 'Starting weight', verdict: null, move: 'start', eased: false };
     }
     const lastE = hist[hist.length - 1];
     const it = lastE.lifts[key];
     const v = verdict(key, it);
-    let w = it.w, tag, why;
-    if (v === 'drop') {
+    const eps = 1e-9;
+    const recent = hist.slice(-8).map((e) => ({ date: e.date, w: e.lifts[key].w, v: verdict(key, e.lifts[key]) }));
+    const n = recent.length;
+    // hard weights not beaten since: done cleanly at that weight or more, or every rep at more
+    const walls = recent.filter((r, i) => HARD.includes(r.v) && !recent.slice(i + 1).some((x) =>
+      (OK_V.includes(x.v) && x.w >= r.w - eps) || (x.v === 'grind' && x.w > r.w + eps)));
+    const lowestWall = (list) => list.reduce((a, r) => (!a || r.w < a.w ? r : a), null);
+    // hard sessions in a row at this weight, and how many of them missed reps
+    let hardRun = 0, missRun = 0;
+    for (let j = n - 1; j >= 0 && Math.abs(recent[j].w - it.w) < eps && HARD.includes(recent[j].v); j--) {
+      hardRun++;
+      if (recent[j].v !== 'grind') missRun++;
+    }
+    const before = n > 1 ? recent[n - 2] : null;
+    const bigJump = before && OK_V.includes(before.v) && it.w - before.w > L.inc + eps;
+    let w = it.w, tag, why, move;
+    const down = (to, text, mv) => { w = Math.max(BAR, to); tag = `−${kg(it.w - w)}`; why = text; move = mv; };
+    if (v === 'drop' && missRun < 2) {
       const prev = hist.slice(0, -1).reverse().map((e) => e.lifts[key]).find((x) => x.w < it.w && isClean(key, x));
-      w = prev ? prev.w : Math.max(BAR, roundTo(it.w * 0.9, 2.5));
-      tag = `−${kg(it.w - w)}`; why = `${kg(it.w)} kg was too heavy last time`;
+      down(prev ? prev.w : roundTo(it.w * 0.9, 2.5), `${kg(it.w)} kg was too heavy last time`, 'back');
+    } else if (((v === 'miss' || v === 'drop') && missRun >= 2) || (HARD.includes(v) && hardRun >= 3 && missRun >= 1)) {
+      down(Math.min(it.w - L.inc, roundTo(it.w * 0.9, 2.5)),
+        missRun >= 2 ? `Missed reps twice in a row at ${kg(it.w)} kg, so 10% lighter and build back up` : `Three hard sessions in a row at ${kg(it.w)} kg with missed reps, so 10% lighter and build back up`, 'reset');
+    } else if ((v === 'miss' || v === 'grind') && bigJump) {
+      const cap = lowestWall(walls.filter((r) => r !== recent[n - 1]));
+      const to = Math.min(before.w + L.inc, cap ? cap.w : Infinity);
+      down(to, `${kg(it.w)} kg was a ${kg(it.w - before.w)} kg jump and ${v === 'miss' ? 'missed reps' : 'a grind'}. Building up from ${kg(to)} instead`, 'back');
     } else if (v === 'miss') {
-      tag = 'Repeat'; why = 'Missed a rep last time';
+      tag = 'Repeat'; why = 'Missed a rep last time'; move = 'repeat';
     } else if (v === 'short') {
-      tag = 'Repeat'; why = 'Stopped early last time';
+      tag = 'Repeat'; why = 'Stopped early last time'; move = 'repeat';
     } else if (v === 'grind') {
-      tag = 'Repeat'; why = 'Last time was a grind';
-    } else if (v === 'easy') {
-      w = it.w + 2 * L.inc; tag = `+${kg(2 * L.inc)}`; why = 'Last time felt easy';
+      tag = 'Repeat'; why = 'Last time was a grind'; move = 'repeat';
     } else {
-      w = it.w + L.inc; tag = `+${kg(L.inc)}`; why = 'Last time was clean';
+      const hardLately = recent.slice(Math.max(0, n - 3), n - 1).some((r) => HARD.includes(r.v));
+      const steps = v === 'easy' && !hardLately ? 2 : 1;
+      w = it.w + steps * L.inc;
+      why = v === 'easy' ? (steps === 2 ? 'Last time felt easy' : 'Felt easy, but one step at a time after a hard session') : 'Last time was clean';
+      move = 'up';
+      const cap = lowestWall(walls);
+      if (cap && w > cap.w + eps) {
+        w = cap.w; move = 'retry';
+        why = `${cap.v === 'grind' ? `${kg(cap.w)} kg was a grind` : `Missed reps at ${kg(cap.w)} kg`} on ${dayDate(cap.date)}. Do it cleanly before going past it`;
+      }
+      tag = `+${kg(w - it.w)}`;
     }
 
     let sets = L.sets;
@@ -1251,7 +1295,11 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
       const last2 = hist.slice(-2).map((e) => e.lifts[key]);
       const stalled = (x) => ['miss', 'drop', 'grind'].includes(verdict(key, x));
       if (sets > 1 && last2.length === 2 && last2.every(stalled)) {
-        sets = 1; why = 'Stalled twice, so one heavy set from now on';
+        sets = 1;
+        if (move === 'reset' || move === 'repeat') {
+          // fewer sets is the fix here, so keep the weight rather than also going lighter
+          w = it.w; tag = 'Repeat'; move = 'repeat'; why = 'Stalled twice, so one heavy set from now on';
+        } else why += '. One heavy set from now on';
       }
     }
 
@@ -1261,7 +1309,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
       w = Math.max(BAR, roundTo(w * 0.9, 2.5));
       eased = true; tag = '−10%'; why = `Eased after ${weeksLabel(gap)} off`;
     }
-    return { key, w, sets, reps: L.reps, tag, why, verdict: v, eased, last: it, lastDate: lastE.date };
+    return { key, w, sets, reps: L.reps, tag, why, verdict: v, move, eased, last: it, lastDate: lastE.date };
   }
 
   function pullHistory(state) {
@@ -2280,7 +2328,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
   };
 
   const EFFORT = {
-    easy: { label: 'Easy', desc: 'Had plenty left. Next time jumps twice as far.' },
+    easy: { label: 'Easy', desc: 'Had plenty left. Next time can jump two steps.' },
     clean: { label: 'Clean', desc: 'Good form on every rep, even if it was hard.' },
     grind: { label: 'Grind', desc: 'The last reps were a fight. Next time repeats the weight.' },
   };
@@ -2293,7 +2341,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
   function effortDesc(k, it) {
     const v = PS.verdict(k, it);
     if (v === 'drop') return 'Well short of 5s. Next time goes back to your last clean weight.';
-    if (v === 'miss') return 'Missed a rep. Next time repeats the weight.';
+    if (v === 'miss') return 'Missed a rep. Next time repeats the weight, or goes lighter if it keeps happening.';
     if (v === 'short') return 'Stopped before the last set. Next time repeats the weight.';
     return EFFORT[it.effort].desc;
   }
@@ -2746,8 +2794,9 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     plans.forEach((p) => {
       const name = PS.LIFTS[p.key].name;
       if (p.eased && !allEased) why.push(`${name} is eased 10%. ${p.why}.`);
-      else if (!p.eased && (p.verdict === 'grind' || p.verdict === 'miss' || p.verdict === 'short')) why.push(`${name} repeats ${PS.kg(p.w)} kg. ${p.why}.`);
-      else if (!p.eased && p.verdict === 'drop') why.push(`${name} goes back to ${PS.kg(p.w)} kg. ${p.why}.`);
+      else if (!p.eased && p.move === 'repeat') why.push(`${name} repeats ${PS.kg(p.w)} kg. ${p.why}.`);
+      else if (!p.eased && (p.move === 'back' || p.move === 'reset')) why.push(`${name} goes down to ${PS.kg(p.w)} kg. ${p.why}.`);
+      else if (!p.eased && p.move === 'retry') why.push(`${name} goes up to ${PS.kg(p.w)} kg. ${p.why}.`);
       if (p.sets < PS.LIFTS[p.key].sets) why.push(`${name}: one heavy set of 5 from now on.`);
     });
     notes.unshift(...why);
