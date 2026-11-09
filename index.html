@@ -1115,70 +1115,93 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     return side > 0.01 ? null : out;
   }
 
-  /* Warm-ups that only ever add plates. The working weight is split into plates per side,
-     heaviest first, chosen so that the first few plates make warm-ups near 60% and 80%
-     of it (60, 75 and 88% for a heavy deadlift). Each warm-up adds plates to the last one,
-     and the working sets add the rest. A few extra plates are fine; missing a warm-up is not. */
-  const RAMP_EXTRA_PLATE = 0.005, RAMP_MISS = 0.012;
-  function plateStacks(side, maxN) {
+  /* Warm-ups. The empty bar, then up to four sets at about 45, 65, 80 and 90% of the working
+     weight, with fewer reps as it gets heavier (5, 3, 2, 1). The last one is never more than
+     5 kg or 10% (whichever is more) below the working weight, so the final jump is small,
+     and at least 7.5% below it (2.5 kg on light weights), so it stays a warm-up.
+     Sets stay at least 5 kg apart, and the first one is at least 7.5 kg over the bar (10 kg on
+     squat and deadlift), so light weights get fewer sets.
+     Plates come second: a set may move by 2.5 kg, within those rules, when that means fewer
+     plates to take off between sets. Each set keeps the plates already on when it can, but
+     never carries more than one plate a side beyond the fewest that make the weight. */
+  const WARM_LADDER = [0.45, 0.65, 0.8, 0.9];
+  const warmReps = (f) => (f < 0.6 ? 5 : f < 0.75 ? 3 : f < 0.87 ? 2 : 1);
+  const warmLimits = (key, w) => ({
+    floor: BAR + (key === 'squat' || key === 'deadlift' ? 10 : 7.5),
+    maxGap: Math.max(5, Math.floor(w * 0.1 / 2.5 + 1e-9) * 2.5),   // the last warm-up is at least 90% of the work weight
+    minGap: Math.max(2.5, roundTo(w * 0.075, 2.5)),  // and at most ~95%, so it stays a warm-up
+  });
+  /* The warm-up weights before thinking about plates, lightest first. */
+  function warmIdeal(key, w) {
+    const { floor, maxGap, minGap } = warmLimits(key, w);
     const out = [];
-    const rec = (left, from, acc) => {
-      if (left < 0.001) { out.push(acc.slice()); return; }
-      if (acc.length >= maxN) return;
-      for (let i = from; i < PLATES.length; i++) {
-        if (PLATES[i] <= left + 1e-9) { acc.push(PLATES[i]); rec(left - PLATES[i], i, acc); acc.pop(); }
-      }
-    };
-    rec(side, 0, []);
+    let above = w;
+    for (let i = WARM_LADDER.length - 1; i >= 0; i--) {
+      let x = roundTo(w * WARM_LADDER[i], 2.5);
+      const top = i === WARM_LADDER.length - 1;
+      if (top) x = Math.min(w - minGap, Math.max(x, w - maxGap));
+      if (x < floor - 1e-9 || above - x < (top ? 2.5 : 5) - 1e-9) continue;
+      out.unshift(x);
+      above = x;
+    }
     return out;
+  }
+  const keptPlates = (a, b) => { let k = 0; while (k < a.length && k < b.length && a[k] === b[k]) k++; return k; };
+  /* Plates for each weight in turn, starting from the empty bar. */
+  function loadChain(weights) {
+    let cur = [], removed = 0, extra = 0;
+    const lays = weights.map((x) => {
+      const nx = loadFrom(cur, x, 1);
+      if (nx == null) return null;
+      removed += cur.length - keptPlates(cur, nx);
+      extra += nx.length - platesPerSide(x).length;
+      cur = nx;
+      return nx;
+    });
+    return { lays, removed, extra };
   }
   function warmupPlan(key, w) {
     const first = [BAR, key === 'deadlift' ? 5 : 8, []];
-    const ramp = key === 'deadlift' && w >= 70 ? [[0.6, 5], [0.75, 3], [0.88, 2]] : [[0.6, 5], [0.8, 3]];
-    const greedy = platesPerSide(w);
-    if (greedy == null) {
-      // a weight the plates can't make: warm-ups rounded to 5 kg
-      const steps = [first];
-      for (const [pct, reps] of ramp) {
-        const x = roundTo(w * pct, 5);
-        if (x > steps[steps.length - 1][0] && x < w) steps.push([x, reps, platesPerSide(x) || []]);
+    const ideal = warmIdeal(key, w);
+    if (platesPerSide(w) == null) {
+      // a weight the plates can't make: the warm-ups still load, the working sets don't
+      const c = loadChain(ideal);
+      return { steps: [first].concat(ideal.map((x, i) => [x, warmReps(x / w), c.lays[i] || []])), work: null };
+    }
+    const { floor, maxGap, minGap } = warmLimits(key, w);
+    // every way of moving each set by -2.5, 0 or +2.5 kg that still follows the rules
+    const seqs = [];
+    const walk = (i, prev, seq) => {
+      if (i === ideal.length) { seqs.push(seq.slice()); return; }
+      for (const d of [0, -2.5, 2.5]) {
+        const x = ideal[i] + d;
+        if (x < floor - 1e-9 || x - prev < (i ? 5 : 0) - 1e-9 || x > w - 2.5 + 1e-9) continue;
+        if (i === ideal.length - 1 && (w - x > maxGap + 1e-9 || w - x < minGap - 1e-9)) continue;
+        seq.push(x); walk(i + 1, x, seq); seq.pop();
       }
-      return { steps, work: null };
-    }
-    if (!greedy.length) return { steps: [first], work: [] };
+    };
+    walk(0, BAR, []);
     let best = null;
-    for (const st of plateStacks((w - BAR) / 2, greedy.length + 3)) {
-      const pre = [];
-      let acc = 0;
-      st.forEach((p) => { acc += p; pre.push(BAR + 2 * acc); });
-      let bc = Infinity, bp = null;
-      const go = (r, minJ, cost, pick) => {
-        if (cost >= bc) return;
-        if (r === ramp.length) { bc = cost; bp = pick.slice(); return; }
-        for (let j = minJ; j < st.length - 1; j++) {
-          const f = pre[j] / w;
-          if (f > 0.93) break;
-          pick.push([j, r]);
-          go(r + 1, j + 1, cost + (f - ramp[r][0]) ** 2, pick);
-          pick.pop();
-        }
-        go(r + 1, minJ, cost + RAMP_MISS, pick);
-      };
-      go(0, 0, (st.length - greedy.length) * RAMP_EXTRA_PLATE, []);
-      if (!best || bc < best.c - 1e-9) best = { c: bc, st, pick: bp, pre };
+    for (const seq of seqs) {
+      const c = loadChain(seq.concat([w]));
+      const dev = seq.reduce((a, x, i) => a + ((x - ideal[i]) / w) ** 2, 0);
+      const cost = 3 * dev + 0.002 * c.removed + 0.001 * c.extra;
+      if (!best || cost < best.cost - 1e-12) best = { cost, seq, c };
     }
-    const steps = [first].concat(best.pick.map(([j, r]) => [best.pre[j], ramp[r][1], best.st.slice(0, j + 1)]));
-    return { steps, work: best.st };
+    const steps = [first].concat(best.seq.map((x, i) => [x, warmReps(x / w), best.c.lays[i]]));
+    return { steps, work: best.c.lays[best.seq.length] };
   }
   function warmups(key, w) {
     return warmupPlan(key, w).steps.map(([x, r]) => [x, r]);
   }
 
   /* Plates per side for weight w, changing as few plates as possible from `cur`:
-     keep the inner plates that still fit, then add what's missing. */
-  function loadFrom(cur, w) {
+     keep the inner plates that still fit, then add what's missing. `extra` caps how many more
+     plates than the fewest the result may have. */
+  function loadFrom(cur, w, extra) {
     const target = platesPerSide(w);
     if (!cur || target == null) return target;
+    const cap = target.length + (extra == null ? Infinity : extra);
     const side = (w - BAR) / 2;
     let best = target, bestCost = cur.length + target.length;
     let acc = 0;
@@ -1186,7 +1209,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
       if (k > 0) acc += cur[k - 1];
       if (acc > side + 1e-9) break;
       const rest = platesPerSide(BAR + 2 * (side - acc));
-      if (rest == null) continue;
+      if (rest == null || k + rest.length > cap) continue;
       const cost = (cur.length - k) + rest.length;
       if (cost < bestCost || (cost === bestCost && k > 0)) { bestCost = cost; best = cur.slice(0, k).concat(rest); }
     }
@@ -2925,7 +2948,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
       const L = PS.LIFTS[p.key];
       const wp = PS.warmupPlan(p.key, p.w);
       const plates = wp.work;
-      const plateTxt = plates == null ? '' : plates.length ? `${plates.map(PS.kg).join(' + ')} a side` : 'empty bar';
+      const plateTxt = plates == null ? '' : plates.length ? `${plates.slice().sort((a, b) => b - a).map(PS.kg).join(' + ')} a side` : 'empty bar';
       const warm = wp.steps.map(([x, r]) => `${x === PS.BAR ? 'bar' : PS.kg(x)}×${r}`).join(' · ');
       return `<div class="row">
           <span class="name">${L.name} <span class="pill" title="${esc(p.why)}">${esc(p.tag)}</span></span>
@@ -4793,7 +4816,8 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
      and a small picture of one sleeve (heaviest plate nearest the middle). */
   const PLATE_H = { 25: 46, 20: 46, 15: 40, 10: 34, 5: 26, 2.5: 20, 1.25: 15 };
   const PLATE_W = { 25: 12, 20: 11, 15: 10, 10: 9, 5: 7, 2.5: 6, 1.25: 5 };
-  const platesTxt = (ps) => ps.map(PS.kg).join(' + ');
+  // heaviest first in words; the picture keeps the order they sit on the bar
+  const platesTxt = (ps) => ps.slice().sort((a, b) => b - a).map(PS.kg).join(' + ');
   function barSVG(plates, keepN) {
     const H = 50, mid = H / 2;
     let x = 10;
@@ -4985,7 +5009,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     } else {
       const w = stepWeight(st);
       const plates = stepPlates(i);
-      const pt = plates == null ? '' : plates.length ? `${plates.map(PS.kg).join(' + ')} a side` : 'Empty bar';
+      const pt = plates == null ? '' : plates.length ? `${platesTxt(plates)} a side` : 'Empty bar';
       const adj = st.kind === 'work';
       const work = workIdx(st.k).length;
       const goal = st.kind === 'warm'
