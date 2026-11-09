@@ -21,7 +21,7 @@ It works offline after the first open.
 
 ## Using it
 
-- **Week**: what you've done this week across lifting, mornings, swim and basketball, day by day, with the weeks before it underneath. Tap a row to go to that tab.
+- **Week**: **Today** at the top, with what's done and what's left (tap **Start** or **Log** to do it from there). Then the rest of the week day by day, including anything missed, and the week's tally: sessions done of planned, and each activity. Bonus sessions are extra and show as +1, so they don't fill a planned session. The squares at the bottom are your past weeks; tap them for the full table.
 - **Weights**: the card shows your next session with weights, warm-up sets and plates per side.
   - Tap **Start workout** to go set by set. Tap **Done** after each set and a rest timer counts down, then beeps when it's time for the next set (with the ringer on). The weight and reps are shown big enough to read from across the room. During warm-ups, **Today's goal** shows the weight, reps and sets you're building up to. Warm-ups are planned so you only ever add plates: each one goes on top of the last, and the working sets add the rest. While you rest, **Load the bar** shows the next weight and reps, the plates for each side and what to add. If you got fewer reps, change the number before tapping Done, or fix it during the rest. After the last set of a lift, pick Easy, Clean or Grind. For pull-ups, tap **+** to add weight on a dip belt or in a vest. Once the first set reaches 10 reps, the next session adds 2.5 kg. With weight on, if the first set drops below 5, it takes 2.5 kg off. At the end, tap **Save session**.
   - Or swipe right on the card to log a session after the fact. Swipe left to skip it and the session moves to the next day.

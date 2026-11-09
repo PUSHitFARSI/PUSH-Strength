@@ -737,52 +737,57 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
 
 
 /* ---------- the week at a glance ---------- */
-.wk-panel { display: grid; gap: 14px; padding-bottom: 4px; }
-.wk-top { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
-.wk-big { font: 54px/0.9 var(--display); letter-spacing: 0.01em; }
-.wk-big small { font-size: 27px; color: var(--ink-3); margin-left: 3px; }
-.wk-cap { font-size: 14px; color: var(--ink-2); }
-.wk-bar { height: 8px; border-radius: 999px; background: var(--raised); overflow: hidden; }
-.wk-bar i { display: block; height: 100%; border-radius: 999px; background: var(--ink); }
-.wk-rows { display: grid; margin: 0 -6px; }
-.wk-row {
-  width: 100%; text-align: left; display: grid; grid-template-columns: 30px minmax(0, 1fr) auto 46px;
-  align-items: center; column-gap: 12px; padding: 12px 6px; border-top: 1px solid var(--line); border-radius: 10px;
-}
-.wk-row:active { background: var(--raised); }
-.wk-ic { display: grid; place-items: center; color: var(--ink-2); }
-.wk-txt { display: grid; gap: 2px; min-width: 0; }
-.wk-name { font-size: 15px; font-weight: 700; }
-.wk-sub { font-size: 12.5px; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.wk-pips { display: flex; gap: 4px; }
-.wk-pips i { width: 9px; height: 9px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--line-2); }
-.wk-pips i.on { background: var(--ink); box-shadow: none; }
-.wk-count { font: 25px/1 var(--display); text-align: right; color: var(--ink-2); }
-.wk-count small { font-size: 15px; color: var(--ink-3); margin-left: 1px; }
-.wk-count.full { color: var(--ink); }
-
-.wk-days { padding: 12px 12px 14px; }
-.wk-grid { display: grid; grid-template-columns: 28px repeat(7, minmax(0, 1fr)); align-items: stretch; }
-.wk-dh { display: grid; justify-items: center; gap: 1px; padding: 7px 0 6px; font-size: 11px; font-weight: 700; color: var(--ink-3); border-radius: 10px 10px 0 0; }
-.wk-dh b { font-size: 14px; color: var(--ink-2); }
-.wk-dh.now { background: var(--raised); color: var(--ink); }
-.wk-dh.now b { color: var(--ink); }
-.wk-rl { display: grid; place-items: center; height: 40px; color: var(--ink-3); }
-.wk-c { display: grid; place-items: center; height: 40px; }
-.wk-c.now { background: var(--raised); }
-.wk-c.now.end { border-radius: 0 0 10px 10px; }
-.wk-c::before { content: ""; box-sizing: border-box; width: 14px; height: 14px; border-radius: 50%; }
-.wk-c.s-done::before { background: var(--ink); }
-.wk-c.s-today::before { border: 2px solid var(--ink); }
-.wk-c.s-planned::before { border: 1.5px dashed var(--ink-3); }
-.wk-c.s-missed::before { width: 10px; height: 2px; border-radius: 1px; background: var(--ink-4); }
-.wk-c.s-skipped::before {
-  width: 12px; height: 12px; border-radius: 0;
-  background: linear-gradient(45deg, transparent 44%, var(--ink-3) 44%, var(--ink-3) 56%, transparent 56%),
-              linear-gradient(-45deg, transparent 44%, var(--ink-3) 44%, var(--ink-3) 56%, transparent 56%);
-}
-.wk-legend { margin-top: 12px; gap: 6px 14px; }
-.wk-legend .wk-c { height: 14px; width: 14px; }
+/* week: today first (a white card like the session cards), the rest of the week, the tally */
+.wk-view { display: flex; flex-direction: column; gap: 22px; }
+.td-card { border-radius: var(--r); background: var(--paper); color: var(--paper-ink); padding: 16px 16px 6px; }
+.td-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding-bottom: 4px; }
+.td-h { margin: 0; font: 26px/1 var(--display); letter-spacing: 0.02em; text-transform: uppercase; }
+.td-when { font-size: 13px; color: var(--paper-ink-2); text-align: right; }
+.td-row { display: flex; align-items: center; gap: 12px; min-height: 58px; padding: 6px 0; box-sizing: border-box; border-top: 1px solid var(--paper-line); }
+.td-head + .td-row { border-top: 0; }
+.td-ic { display: grid; place-items: center; flex: none; }
+.td-txt { flex: 1; min-width: 0; display: grid; gap: 1px; line-height: 1.3; }
+.td-name { font-size: 15px; font-weight: 700; }
+.td-sub { font-size: 13px; color: var(--paper-ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.td-tag { display: inline-block; margin-left: 4px; padding: 1px 7px; border-radius: 999px; background: var(--paper-ink); color: var(--paper); font-size: 10.5px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; vertical-align: 1px; }
+.td-check { width: 30px; height: 30px; flex: none; border-radius: 50%; background: var(--paper-ink); color: var(--paper); display: grid; place-items: center; }
+.td-go { flex: none; min-width: 64px; height: 40px; padding: 0 18px; border-radius: 999px; background: var(--paper-ink); color: var(--paper); font-size: 14px; font-weight: 700; }
+.td-row.skipped { color: var(--paper-ink-2); }
+.td-rest { margin: 0; padding: 4px 0 12px; font-size: 15px; color: var(--paper-ink-2); }
+.td-rest b { color: var(--paper-ink); }
+.rw-list { padding: 0 14px 0 16px; }
+.rw-row { width: 100%; display: flex; align-items: center; gap: 12px; min-height: 50px; border-top: 1px solid var(--line); text-align: left; color: var(--ink); }
+.rw-row:first-child { border-top: 0; }
+.rw-day { width: 66px; flex: none; display: grid; gap: 1px; line-height: 1.2; }
+.rw-day b { font-size: 12px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; }
+.rw-day small { font-size: 12px; color: var(--ink-3); }
+.rw-ic { display: flex; align-items: center; gap: 4px; flex: none; }
+.rw-name { flex: 1; min-width: 0; font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rw-row.missed, .rw-row.skipped { color: var(--ink-3); }
+.rw-row.missed .rw-name { text-decoration: line-through; }
+.rw-none { margin: 0; padding: 14px 0; font-size: 14px; color: var(--ink-3); }
+.wk-panel { display: grid; gap: 12px; padding: 14px; }
+.wk-top { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+.wk-big { font: 40px/0.85 var(--display); letter-spacing: 0.01em; }
+.wk-big small { font-size: 20px; color: var(--ink-3); margin-left: 2px; }
+.wk-cap { font-size: 13px; color: var(--ink-2); }
+.wk-seg { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 4px; }
+.wk-seg i { height: 8px; border-radius: 4px; background: var(--line); }
+.wk-seg i.on { background: var(--ink); }
+.wk-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.wk-tile { display: flex; align-items: center; gap: 9px; min-height: 46px; padding: 0 12px; border: 1px solid var(--line); border-radius: 14px; color: var(--ink); text-align: left; }
+.wk-tile.full { border-color: var(--ink); }
+.wt-name { flex: 1; min-width: 0; font-size: 13px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wt-bonus { font-size: 11px; font-weight: 800; color: var(--ink); }
+.wt-count { font: 19px/1 var(--display); }
+.wt-count small { font-size: 13px; color: var(--ink-3); margin-left: 1px; }
+@media (max-width: 374px) { .wk-tile { padding: 0 10px; } .wk-tile svg { display: none; } }
+.pw-line { width: 100%; display: flex; align-items: center; gap: 6px; min-height: 44px; color: var(--ink); text-align: left; }
+.pw-lbl { flex: 1; font-size: 13px; color: var(--ink-2); }
+.pw-sqs { display: flex; gap: 6px; }
+.pw-sq { width: 30px; height: 30px; border-radius: 8px; background: var(--line); color: var(--ink-2); font: 15px/30px var(--display); text-align: center; }
+.pw-sq.full { background: var(--ink); color: var(--bg); }
+.wk-table td small { font-size: 11px; color: var(--ink-3); }
 .wk-past { padding: 0; overflow: hidden; }
 .wk-table th svg { vertical-align: -3px; color: var(--ink-3); }
 .wk-table td.full { color: var(--ink); font-weight: 700; }
@@ -1841,7 +1846,8 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
       const k = weekKind(state, kind, t);
       const tracked = open || (k.start != null && k.start <= we);
       const from = k.fromStart && k.start > ws ? k.start : ws;
-      const ents = k.list.filter((e) => e.date >= ws && e.date <= we);
+      const all = k.list.filter((e) => e.date >= ws && e.date <= we);
+      const ents = all.filter((e) => !e.bonus);   // bonus sessions are extra: they don't fill a planned slot
       const by = {};
       ents.forEach((e) => { if (by[e.date] !== 'done') by[e.date] = e.status; });
       let planned = 0;
@@ -1854,10 +1860,10 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
         if (by[d] === 'done') st = 'done';
         else if (by[d] === 'skipped') st = 'skipped';
         else if (plan) st = d > t ? 'planned' : d === t ? 'today' : 'missed';
-        days.push({ d, st });
+        days.push({ d, st, plan });
       }
       const done = ents.filter((e) => e.status === 'done').length;
-      const bonus = ents.filter((e) => e.status === 'done' && e.bonus).length;
+      const bonus = all.filter((e) => e.status === 'done' && e.bonus).length;
       out.kinds[kind] = { tracked, planned, done, bonus, skipped: ents.filter((e) => e.status === 'skipped').length, days };
       if (tracked) { out.done += Math.min(done, planned); out.planned += planned; }
     });
@@ -2680,101 +2686,186 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     const da = PS.parse(a), db = PS.parse(b);
     return da.getMonth() === db.getMonth() ? `${da.getDate()}–${db.getDate()} ${PS.MON[db.getMonth()]}` : `${da.getDate()} ${PS.MON[da.getMonth()]} – ${db.getDate()} ${PS.MON[db.getMonth()]}`;
   };
-  const ST_WORD = { done: 'done', skipped: 'skipped', today: 'planned for today', planned: 'coming up', missed: 'missed' };
 
-  /* What is next for one activity this week, in a few words. */
-  function weekNext(kind, k, w, t) {
-    if (k.planned && k.done >= k.planned) {
-      if (kind === 'swim') {
-        const sw = PS.swimsDone(state).filter((e) => e.date >= w.start && e.date <= w.end).sort((a, b) => PS.swimPace(a) - PS.swimPace(b))[0];
-        if (sw) return `Done · ${km(sw.dist)} in ${PS.mmss(sw.time)}`;
-      }
-      return 'Done';
+  /* ---------- week: today first, then the rest of the week, then the tally ---------- */
+  const SHORT_NAME = { lift: 'Strength', morning: 'Morning', swim: 'Swim', ball: 'Basketball' };
+  const CHECK = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5.5 12.5l4 4 9-9"/></svg>';
+  const dayLabel = (d) => `${PS.DAY[PS.dow(d)]} ${PS.parse(d).getDate()}`;
+  const relDay = (d, t) => { const n = PS.diff(t, d); return n === 1 ? 'Tomorrow' : `In ${n} days`; };
+  const entryLists = () => ({ lift: state.lifts, morning: state.mornings || [], swim: state.swims || [], ball: state.ball || [] });
+
+  /* One line on a logged session. */
+  function doneLine(kind, e) {
+    if (kind === 'lift') {
+      const ks = Object.keys(e.lifts || {}).filter((k) => PS.LIFTS[k] && e.lifts[k]);
+      return ks.length ? `${ks.map((k) => `${PS.LIFTS[k].short} ${PS.kg(e.lifts[k].w)}`).join(' · ')} kg` : PS.SESSIONS[e.type] ? PS.SESSIONS[e.type].name : 'Done';
     }
-    let due, extra = '';
-    if (kind === 'lift') { const nl = PS.nextLift(state, t); due = nl.due; extra = PS.SESSIONS[nl.type].name; }
-    else if (kind === 'morning') due = PS.morningDue(state, t).due;
-    else if (kind === 'swim') due = swimDue(t).due;
-    else due = ballDue(t).due;
-    if (due > w.end) return 'Next week';
-    const when = due < t ? 'Late' : due === t ? 'Today' : (extra ? PS.DAY : PS.DAY_LONG)[PS.dow(due)];
-    return extra ? `${when} · ${extra}` : when;
+    if (kind === 'morning') {
+      const parts = [];
+      if (e.run && e.run.km > 0) parts.push(`${fmtKm(e.run.km)} km in ${PS.mmss(e.run.time)}`);
+      if (e.bag) parts.push('bag');
+      return parts.join(' · ') || 'Done';
+    }
+    if (kind === 'swim') return e.dist > 0 ? `${km(e.dist)} in ${PS.mmss(e.time)}` : e.crawl ? 'Crawl practice' : 'Done';
+    return e.d ? gameLine(e.d) : 'Played';
   }
 
-  function viewWeek(t) {
-    const list = PS.weekList(state, t, 9);
-    const w = list[0];
-    const left = PS.diff(t, w.end) + 1;
-    const pct = w.planned ? Math.round((w.done / w.planned) * 100) : 0;
-    const complete = w.planned > 0 && w.done >= w.planned;
-    const rows = PS.WEEK_KINDS.map((kind) => {
+  /* Today: what's logged today (bonus sessions too) and what's still due, late ones included. */
+  function todayItems(t) {
+    const due = dueToday(t), lists = entryLists(), items = [];
+    PS.WEEK_KINDS.forEach((kind) => {
+      lists[kind].filter((e) => e.date === t && (e.status === 'done' || e.status === 'skipped'))
+        .forEach((e) => items.push({ kind, e, st: e.status }));
+      if (!due[KIND[kind].tab]) return;
+      let from = t, sub = '';
+      if (kind === 'lift') { const nl = PS.nextLift(state, t); from = nl.due; sub = PS.SESSIONS[nl.type].name; }
+      else if (kind === 'swim') { from = swimDue(t).due; sub = state.settings.swimBase ? km(state.settings.swimBase.dist) : ''; }
+      else if (kind === 'ball') { from = ballDue(t).due; sub = 'Game'; }
+      else { const r = runDefaults(); sub = `${fmtKm(r.km)} km run${r.bag ? ' + bag' : ''}`; }
+      if (from < t) sub = `${sub ? `${sub} · ` : ''}from ${PS.DAY_LONG[PS.dow(from)]}`;
+      items.push({ kind, st: 'todo', sub, from });
+    });
+    return items;
+  }
+
+  /* The next thing planned after today, for a rest day. */
+  function nextAfter(t) {
+    const nl = PS.nextLift(state, t);
+    const c = [
+      { kind: 'lift', d: nl.due }, { kind: 'morning', d: PS.morningDue(state, t).due },
+      { kind: 'swim', d: swimDue(t).due }, { kind: 'ball', d: ballDue(t).due },
+    ].filter((x) => x.d > t).sort((a, b) => (a.d < b.d ? -1 : a.d > b.d ? 1 : 0));
+    return c[0] || null;
+  }
+
+  function todayHTML(t) {
+    const items = todayItems(t);
+    const open = items.filter((x) => x.st !== 'skipped');
+    const done = items.filter((x) => x.st === 'done').length;
+    const dd = PS.parse(t);
+    const when = `${PS.DAY[dd.getDay()]} ${dd.getDate()} ${PS.MON[dd.getMonth()]}${open.length ? ` · ${done} of ${open.length} done` : ''}`;
+    let rows;
+    if (!items.length) {
+      const nx = nextAfter(t);
+      rows = `<p class="td-rest">Nothing planned today.${nx ? ` Next: <b>${SHORT_NAME[nx.kind]}</b> ${PS.diff(t, nx.d) === 1 ? 'tomorrow' : `on ${PS.DAY_LONG[PS.dow(nx.d)]}`}.` : ''}</p>`;
+    } else {
+      rows = items.map((x) => {
+        const name = SHORT_NAME[x.kind];
+        if (x.st === 'todo') {
+          const btn = x.kind === 'lift'
+            ? `<button class="td-go" type="button" data-act="wk-start" aria-label="Start ${esc(x.sub)}">Start</button>`
+            : `<button class="td-go" type="button" data-act="wk-log" data-tab="${KIND[x.kind].tab}" aria-label="Log ${name.toLowerCase()}">Log</button>`;
+          return `<div class="td-row"><span class="td-ic">${kindIcon(x.kind, 22)}</span><span class="td-txt"><span class="td-name">${name}</span>${x.sub ? `<span class="td-sub">${esc(x.sub)}</span>` : ''}</span>${btn}</div>`;
+        }
+        const skip = x.st === 'skipped';
+        return `<div class="td-row${skip ? ' skipped' : ''}"><span class="td-ic">${kindIcon(x.kind, 22)}</span><span class="td-txt"><span class="td-name">${name}${x.e.bonus ? ' <span class="td-tag">Bonus</span>' : ''}</span><span class="td-sub">${esc(skip ? 'Skipped' : doneLine(x.kind, x.e))}</span></span>${skip ? '' : `<span class="td-check" role="img" aria-label="Done">${CHECK}</span>`}</div>`;
+      }).join('');
+    }
+    return `<section class="td-card" aria-labelledby="tdH">
+        <div class="td-head"><h2 class="td-h" id="tdH">Today</h2><span class="td-when">${when}</span></div>
+        ${rows}
+      </section>`;
+  }
+
+  /* The rest of this week, one row per day: what's coming, then what was missed or skipped.
+     A session done on another day than planned (moved) cancels out a missed day of the same
+     kind, and a late session that is still due today isn't listed as missed. */
+  function restOfWeekHTML(w, t) {
+    const late = {};   // kind -> the earlier day a session still due today was planned for
+    todayItems(t).forEach((x) => { if (x.st === 'todo' && x.from < t) late[x.kind] = x.from; });
+    const items = [];
+    PS.WEEK_KINDS.forEach((kind) => {
       const k = w.kinds[kind];
-      const n = Math.max(k.planned, k.done);
-      const pips = Array.from({ length: n }, (_, i) => `<i class="${i < k.done ? 'on' : ''}"></i>`).join('');
-      let sub = weekNext(kind, k, w, t);
-      if (k.bonus) sub += ` · +${k.bonus} bonus`;
-      if (kind === 'morning') {
-        const kmW = (state.mornings || []).filter((e) => e.status === 'done' && e.run && e.run.km > 0 && e.date >= w.start && e.date <= w.end).reduce((a, e) => a + e.run.km, 0);
-        if (kmW) sub += ` · ${fmtKm(Math.round(kmW * 10) / 10)} km run`;
-      }
-      return `<button class="wk-row" type="button" data-act="goto" data-tab="${KIND[kind].tab}" aria-label="${KIND[kind].name}: ${k.done} of ${k.planned} this week. ${esc(sub)}. Opens ${TITLES[KIND[kind].tab]}.">
-          <span class="wk-ic">${kindIcon(kind, 22)}</span>
-          <span class="wk-txt"><span class="wk-name">${KIND[kind].name}</span><span class="wk-sub">${esc(sub)}</span></span>
-          <span class="wk-pips" aria-hidden="true">${pips}</span>
-          <span class="wk-count${k.planned && k.done >= k.planned ? ' full' : ''}">${k.done}<small>/${k.planned}</small></span>
+      if (!k.tracked) return;
+      let moved = k.days.filter((x) => x.st === 'done' && !x.plan).length;
+      // a late session that is still due today isn't missed yet
+      const missed = k.days.filter((x) => x.d < t && x.st === 'missed' && x.d !== late[kind]);
+      k.days.forEach((x) => {
+        if (x.d > t && x.st === 'planned') items.push({ kind, d: x.d, st: 'planned' });
+        else if (x.d < t && x.st === 'skipped') items.push({ kind, d: x.d, st: 'skipped' });
+        else if (missed.includes(x)) { if (moved > 0) moved--; else items.push({ kind, d: x.d, st: 'missed' }); }
+      });
+    });
+    const groups = [];
+    items.forEach((x) => {
+      const g = groups.find((y) => y.d === x.d && y.st === x.st);
+      if (g) g.kinds.push(x.kind); else groups.push({ d: x.d, st: x.st, kinds: [x.kind] });
+    });
+    const ord = (a, b) => ((a.st === 'planned') !== (b.st === 'planned') ? (a.st === 'planned' ? -1 : 1) : a.d < b.d ? -1 : a.d > b.d ? 1 : 0);
+    const rows = groups.sort(ord).map((g) => {
+      g.kinds.sort((a, b) => PS.WEEK_KINDS.indexOf(a) - PS.WEEK_KINDS.indexOf(b));
+      const names = g.kinds.map((kind) => SHORT_NAME[kind]).join(' + ');
+      const right = g.st === 'planned' ? relDay(g.d, t) : g.st === 'missed' ? 'Missed' : 'Skipped';
+      const tb = KIND[g.kinds[0]].tab;
+      return `<button class="rw-row ${g.st}" type="button" data-act="goto" data-tab="${tb}" aria-label="${PS.dayDate(g.d)}: ${names}, ${right.toLowerCase()}. Opens ${TITLES[tb]}.">
+          <span class="rw-day"><b>${dayLabel(g.d)}</b><small>${right}</small></span><span class="rw-ic">${g.kinds.map((kind) => kindIcon(kind, 20)).join('')}</span><span class="rw-name">${names}</span>
         </button>`;
     }).join('');
+    return `<section aria-labelledby="rwH">
+        ${secHead('<span id="rwH">Rest of the week</span>')}
+        <div class="panel rw-list">${rows || `<p class="rw-none">${t === w.end ? 'Last day of the week.' : 'Nothing else planned this week.'}</p>`}</div>
+      </section>`;
+  }
 
-    // day by day
-    const heads = w.kinds.lift.days.map((x) => {
-      const dd = PS.parse(x.d);
-      return `<span class="wk-dh${x.d === t ? ' now' : ''}"><span>${PS.DAY[dd.getDay()].charAt(0)}</span><b>${dd.getDate()}</b></span>`;
-    }).join('');
-    const grid = PS.WEEK_KINDS.map((kind, ki) => {
-      const cells = w.kinds[kind].days.map((x) => `<span class="wk-c${x.st ? ` s-${x.st}` : ''}${x.d === t ? ` now${ki === PS.WEEK_KINDS.length - 1 ? ' end' : ''}` : ''}"${x.st ? ` role="img" aria-label="${KIND[kind].name}, ${PS.dayDate(x.d)}: ${ST_WORD[x.st]}"` : ''}></span>`).join('');
-      return `<span class="wk-rl" title="${KIND[kind].name}">${kindIcon(kind, 18)}</span>${cells}`;
-    }).join('');
-
-    // past weeks
+  function pastWeeksTable(past) {
     const cell = (k) => {
       if (!k.tracked) return '<td class="n none">–</td>';
       const cls = k.planned && k.done >= k.planned ? 'full' : k.done ? 'part' : 'zero';
-      return `<td class="n ${cls}">${k.done}/${k.planned}</td>`;
+      return `<td class="n ${cls}">${k.done}/${k.planned}${k.bonus ? `<small> +${k.bonus}</small>` : ''}</td>`;
     };
-    const past = list.slice(1).filter((x) => PS.WEEK_KINDS.some((kind) => x.kinds[kind].tracked));
-    const pastRows = past.map((x) => `<tr><td>${weekRange(x.start, x.end)}</td>${PS.WEEK_KINDS.map((kind) => cell(x.kinds[kind])).join('')}<td class="n tot${x.planned && x.done >= x.planned ? ' full' : ''}">${x.done}/${x.planned}</td></tr>`).join('');
+    const rows = past.map((x) => `<tr><td>${weekRange(x.start, x.end)}</td>${PS.WEEK_KINDS.map((kind) => cell(x.kinds[kind])).join('')}<td class="n tot${x.planned && x.done >= x.planned ? ' full' : ''}">${x.done}/${x.planned}</td></tr>`).join('');
+    return `<div class="panel wk-past">
+        <table class="v-table static wk-table">
+          <caption class="sr">Past weeks, newest first</caption>
+          <thead><tr><th scope="col">Week</th>${PS.WEEK_KINDS.map((kind) => `<th scope="col" class="n"><span class="sr">${KIND[kind].name}</span>${kindIcon(kind, 16)}</th>`).join('')}<th scope="col" class="n">All</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+  }
+  function openPastWeeks() {
+    const t = T();
+    const past = PS.weekList(state, t, 13).slice(1).filter((x) => PS.WEEK_KINDS.some((kind) => x.kinds[kind].tracked));
+    openSheet({ title: 'Past weeks', closeLabel: 'Close', body: `<p class="block-sub">Done of planned. Bonus sessions are extra, shown as +1.</p>${pastWeeksTable(past)}` });
+  }
 
-    return `
+  function viewWeek(t) {
+    const list = PS.weekList(state, t, 7);
+    const w = list[0];
+    const left = PS.diff(t, w.end) + 1;
+    const complete = w.planned > 0 && w.done >= w.planned;
+    const toGo = PS.WEEK_KINDS.reduce((a, kind) => {
+      const k = w.kinds[kind];
+      return k.tracked ? a + Math.max(0, Math.min(k.planned - k.done, k.days.filter((x) => x.st === 'planned' || x.st === 'today').length)) : a;
+    }, 0);
+    const segs = w.planned <= 16 ? Array.from({ length: w.planned }, (_, i) => `<i${i < w.done ? ' class="on"' : ''}></i>`).join('') : '';
+    const tiles = PS.WEEK_KINDS.filter((kind) => w.kinds[kind].tracked).map((kind) => {
+      const k = w.kinds[kind];
+      const full = k.planned > 0 && k.done >= k.planned;
+      return `<button class="wk-tile${full ? ' full' : ''}" type="button" data-act="goto" data-tab="${KIND[kind].tab}" aria-label="${KIND[kind].name}: ${k.done} of ${k.planned} this week${k.bonus ? `, plus ${k.bonus} bonus` : ''}. Opens ${TITLES[KIND[kind].tab]}.">
+          ${kindIcon(kind, 20)}<span class="wt-name">${KIND[kind].name}${k.bonus ? ` <b class="wt-bonus">+${k.bonus}</b>` : ''}</span><span class="wt-count">${k.done}<small>/${k.planned}</small></span>
+        </button>`;
+    }).join('');
+    const pastW = list.slice(1).filter((x) => PS.WEEK_KINDS.some((kind) => x.kinds[kind].tracked)).reverse();
+    const pastLine = pastW.length ? `<button class="pw-line" type="button" data-act="wk-past" aria-label="Past ${pastW.length === 1 ? 'week' : `${pastW.length} weeks`}: ${pastW.map((x) => `${weekRange(x.start, x.end)}, ${x.done} of ${x.planned}`).join('; ')}. Opens the table.">
+        <span class="pw-lbl">Past ${pastW.length === 1 ? 'week' : `${pastW.length} weeks`}</span>
+        <span class="pw-sqs" aria-hidden="true">${pastW.map((x) => `<span class="pw-sq${x.planned && x.done >= x.planned ? ' full' : ''}">${x.done}</span>`).join('')}</span>${chev}
+      </button>` : '';
+    return `<div class="wk-view">
+      ${todayHTML(t)}
+      ${restOfWeekHTML(w, t)}
       <section aria-labelledby="wkH">
         ${secHead(`<span id="wkH">${weekRange(w.start, w.end)}</span>`, `<span class="aside">${complete ? 'Week complete' : left === 1 ? 'Last day' : `${left} days left`}</span>`)}
         <div class="panel wk-panel">
           <div class="wk-top">
             <span class="wk-big">${w.done}<small>/${w.planned}</small></span>
-            <span class="wk-cap">${complete ? 'Everything planned this week is done.' : `sessions done this week`}</span>
+            <span class="wk-cap">${complete ? 'all done' : toGo ? `done · ${toGo} to go` : 'done this week'}</span>
           </div>
-          <div class="wk-bar" role="progressbar" aria-label="Sessions done this week" aria-valuemin="0" aria-valuemax="${w.planned}" aria-valuenow="${w.done}"><i style="width:${pct}%"></i></div>
-          <div class="wk-rows">${rows}</div>
+          ${segs ? `<div class="wk-seg" role="img" aria-label="${w.done} of ${w.planned} sessions done this week">${segs}</div>` : ''}
+          <div class="wk-tiles">${tiles}</div>
         </div>
       </section>
-      <section aria-labelledby="wkDayH">
-        ${secHead('<span id="wkDayH">Day by day</span>')}
-        <div class="panel wk-days">
-          <div class="wk-grid" role="group" aria-label="This week, day by day"><span></span>${heads}${grid}</div>
-          <div class="legend wk-legend">
-            <span><i class="wk-c s-done"></i>Done</span><span><i class="wk-c s-today"></i>Today</span><span><i class="wk-c s-planned"></i>Coming up</span><span><i class="wk-c s-skipped"></i>Skipped</span><span><i class="wk-c s-missed"></i>Missed</span>
-          </div>
-        </div>
-      </section>
-      ${past.length ? `<section aria-labelledby="wkPastH">
-        ${secHead('<span id="wkPastH">Past weeks</span>', `<span class="aside">Done of planned</span>`)}
-        <div class="panel wk-past">
-          <table class="v-table static wk-table">
-            <caption class="sr">Past weeks, newest first</caption>
-            <thead><tr><th scope="col">Week</th>${PS.WEEK_KINDS.map((kind) => `<th scope="col" class="n"><span class="sr">${KIND[kind].name}</span>${kindIcon(kind, 16)}</th>`).join('')}<th scope="col" class="n">All</th></tr></thead>
-            <tbody>${pastRows}</tbody>
-          </table>
-        </div>
-      </section>` : ''}`;
+      ${pastLine}
+    </div>`;
   }
 
   function viewWeights(t) {
@@ -4578,6 +4669,9 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     else if (act === 'expand') openViewer(b.dataset.key, null, b.closest('.panel'));
     else if (act === 'chart') openViewer(b.dataset.key, null, b);
     else if (act === 'goto') setTab(b.dataset.tab);
+    else if (act === 'wk-start') openWorkout(false);
+    else if (act === 'wk-log') HANDLERS[b.dataset.tab].done();
+    else if (act === 'wk-past') openPastWeeks();
     else if (act === 'more-lifts') { showAllLifts = !showAllLifts; render(); }
     else if (act === 'more-swims') { showAllSwims = !showAllSwims; render(); }
     else if (act === 'edit-lift') editLift(b.dataset.id);
