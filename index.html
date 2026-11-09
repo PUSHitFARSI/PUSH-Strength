@@ -5736,7 +5736,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
       <div class="field you"><span class="lbl">You</span><p class="muted small">Used only to compare you with the strength, swim and running standards. Nothing is tracked over time.</p></div>
       <div class="rest-row"><span>Body weight</span><div class="stepper"><button type="button" data-bw="-1" aria-label="Half a kilo less">−</button><input id="bwIn" inputmode="decimal" autocomplete="off" value="${PS.kg(s.bodyWeight)}" aria-label="Body weight in kilograms"><span class="unit">kg</span><button type="button" data-bw="1" aria-label="Half a kilo more">+</button></div></div>
       <div class="rest-row"><span>Age <span class="muted small">for swim levels</span></span><div class="stepper"><button type="button" data-ag="-1" aria-label="One year less">−</button><input id="agIn" inputmode="numeric" autocomplete="off" value="${s.age || ''}" placeholder="Add" aria-label="Age in years"><span class="unit">yrs</span><button type="button" data-ag="1" aria-label="One year more">+</button></div></div>
-      <div class="field"><span class="lbl" id="ldL">Lift days</span><div class="chips days" role="group" aria-labelledby="ldL">${chips('ld', s.liftDays)}</div><p class="muted small">Pick two. The first is Squat & Bench, the second is Deadlift & Press.</p></div>
+      <div class="field"><span class="lbl" id="ldL">Lift days</span><div class="chips days" role="group" aria-labelledby="ldL">${chips('ld', s.liftDays)}</div><p class="muted small">Two days. Tap a day to move the nearer one there. The first in the week is Squat & Bench, the second Deadlift & Press.</p></div>
       <div class="field"><span class="lbl" id="mdL">Morning run + bag</span><div class="chips days" role="group" aria-labelledby="mdL">${chips('md', s.morningDays)}</div></div>
       <div class="field"><span class="lbl" id="swL">Swim day</span><div class="chips days" role="group" aria-labelledby="swL">${chips('sd', [s.swimDay])}</div>
         <div class="rest-row"><span>Learning front crawl</span><button class="chip" type="button" data-crawl aria-pressed="${!!s.crawl}">${s.crawl ? 'On' : 'Off'}</button></div></div>
@@ -5791,7 +5791,11 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
           if (b.dataset.ld != null) {
             const d = +b.dataset.ld;
             if (!s.liftDays.includes(d)) {
-              s.liftDays = [s.liftDays[s.liftDays.length - 1], d];
+              // move the nearer lift day to the one tapped (Mon + Wed, tap Thu: Mon + Thu)
+              const ld = s.liftDays.slice(-2);
+              const gap = (a) => { const x = Math.abs(a - d); return Math.min(x, 7 - x); };
+              const i = ld.length < 2 ? -1 : gap(ld[1]) < gap(ld[0]) ? 1 : 0;
+              s.liftDays = i < 0 ? ld.concat([d]) : ld.map((x, j) => (j === i ? d : x));
               s.since = T();
               save(); refresh();
               const nb = $(`[data-ld="${d}"]`, el); if (nb) nb.focus({ preventScroll: true });
