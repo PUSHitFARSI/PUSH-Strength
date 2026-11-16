@@ -505,6 +505,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
   font-size: 14px; line-height: 1.35; box-shadow: 0 10px 28px var(--shadow);
 }
 .toast .msg { flex: 1; min-width: 0; }
+body.has-mini .toast:not(.top) { bottom: calc(var(--tab-h) + env(safe-area-inset-bottom, 0px) + 78px); }
 .toast.top { z-index: 90; bottom: auto; top: calc(env(safe-area-inset-top, 0px) + 12px); }
 .toast button { font-weight: 800; text-decoration: underline; text-underline-offset: 3px; padding: 6px 2px; }
 
@@ -860,6 +861,34 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
 }
 .wo-top { flex: none; display: grid; grid-template-columns: 48px minmax(0, 1fr) 48px; align-items: center; height: 60px; }
 .wo-top .wo-icon:last-child { justify-self: end; }
+.wo-top.wide { grid-template-columns: 96px minmax(0, 1fr) 96px; }
+.wo-tr { justify-self: end; display: flex; gap: 8px; }
+.wo-name { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 400px) {
+  .wo-top.wide { grid-template-columns: 82px minmax(0, 1fr) 82px; }
+  .wo-top.wide .wo-icon { width: 38px; height: 38px; }
+  .wo-tr { gap: 6px; }
+  .wo-top.wide .wo-name { font-size: clamp(14px, 4.6vw, 19px); }
+}
+/* minimized workout: a bar above the tabs */
+.wo-mini-wrap {
+  position: fixed; z-index: 30; left: 0; right: 0;
+  bottom: calc(var(--tab-h) + env(safe-area-inset-bottom, 0px) + 10px);
+  display: flex; justify-content: center; padding: 0 var(--gut); pointer-events: none;
+}
+.wo-mini {
+  pointer-events: auto; width: 100%; max-width: 488px; min-height: 56px; box-sizing: border-box;
+  display: flex; align-items: center; gap: 12px; padding: 8px 10px 8px 18px; border-radius: 18px;
+  background: var(--ink); color: var(--bg); text-align: left;
+  box-shadow: 0 0 0 1px var(--bg), 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+.wo-mini.alert { animation: wm-pulse 1.6s ease-in-out infinite; }
+@keyframes wm-pulse { 50% { box-shadow: 0 0 0 4px var(--line-2), 0 8px 24px rgba(0, 0, 0, 0.45); } }
+.wm-txt { flex: 1; min-width: 0; display: grid; gap: 1px; }
+.wm-main { font-size: 17px; font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wm-sub { font-size: 12.5px; opacity: 0.7; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wm-back { flex: none; display: flex; align-items: center; gap: 4px; height: 40px; padding: 0 12px; border-radius: 12px; font-size: 14px; font-weight: 800; background: var(--bg); color: var(--ink); }
+body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
 .wo-icon {
   width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center;
   background: var(--raised); color: var(--ink);
@@ -2372,6 +2401,8 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     expand: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"/></svg>',
     play: '<svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><path d="M4 2.5v11l9.5-5.5z" fill="currentColor"/></svg>',
     sound: '<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>',
+    down: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>',
+    up: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>',
     timer: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 13.5V9.5M9.5 2.5h5M18.5 6.5l1.5-1.5"/></svg>',
     mute: '<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M17 9.5l5 5M22 9.5l-5 5"/></svg>',
   };
@@ -4763,6 +4794,8 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
   let woEl = null;
   let woTimer = null;
   let woDialog = false;
+  let woMin = false; // minimized: the workout keeps running behind the app, with a bar to get back
+  let woMini = null;
   let woDiscardArmed = false;
   let woMsg = '';
   let lastPip = null;
@@ -4957,6 +4990,11 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
   function openWorkout(asBonus) {
     if (!wo) { wo = buildWorkout(asBonus); saveWorkout(); }
     woDialog = false; woDiscardArmed = false; woMsg = '';
+    if (woMin) {
+      woMin = false;
+      removeMini();
+      if (woEl) { woEl.style.display = ''; woEl.classList.remove('flash'); }
+    }
     if (!woEl) {
       woEl = document.createElement('div');
       woEl.className = 'wo';
@@ -4986,8 +5024,57 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     woTimer = null;
     releaseAwake();
     if (woEl) { woEl.remove(); woEl = null; }
+    woMin = false;
+    removeMini();
     unlockScroll('workout');
     setInert(false);
+  }
+
+  /* Minimize: hide the workout and use the app as normal. The clock, rest timer and beeps keep going,
+     and a bar above the tabs shows the rest countdown and takes you back. */
+  function minimizeWorkout() {
+    if (!woEl || !wo) return;
+    woMin = true;
+    woDialog = false;
+    woEl.style.display = 'none';
+    unlockScroll('workout');
+    setInert(false);
+    woMini = document.createElement('div');
+    woMini.className = 'wo-mini-wrap';
+    woMini.innerHTML = `<button class="wo-mini" type="button" aria-label="Back to the workout">
+        <span class="wm-txt"><b class="wm-main"></b><span class="wm-sub"></span></span>
+        <span class="wm-back">Back ${ICON.up}</span>
+      </button><span class="sr" aria-live="polite"></span>`;
+    woMini.addEventListener('click', (e) => { if (e.target.closest('.wo-mini')) openWorkout(); });
+    document.body.appendChild(woMini);
+    document.body.classList.add('has-mini');
+    updateMini();
+    render();
+    const mb = $('.wo-mini', woMini);
+    if (mb) mb.focus({ preventScroll: true });
+  }
+  function removeMini() {
+    if (woMini) { woMini.remove(); woMini = null; }
+    document.body.classList.remove('has-mini');
+  }
+  function updateMini() {
+    if (!woMini || !wo) return;
+    const now = Date.now();
+    let main, over = false;
+    if (wo.phase === 'done') main = 'Workout done · save it';
+    else if (wo.phase === 'rest') main = `Rest ${PS.mmss(Math.max(0, Math.ceil((wo.restEnd - now) / 1000)))}`;
+    else {
+      const st = wo.steps[wo.i];
+      const nm = st.k === 'pull' ? 'Pull-ups' : PS.LIFTS[st.k].short;
+      const what = `${nm} · ${st.kind === 'warm' ? 'warm-up' : 'set'} ${st.n} of ${st.of}`;
+      over = !!wo.restOver;
+      main = over ? `Rest over · ${what}` : `Next: ${what}`;
+    }
+    const m = $('.wm-main', woMini), sub = $('.wm-sub', woMini);
+    if (m && m.textContent !== main) m.textContent = main;
+    const subTxt = `${wo.bonus ? 'Bonus · ' : ''}${PS.SESSIONS[wo.type].name} · ${fmtDur((wo.ended || now) - wo.started)}`;
+    if (sub && sub.textContent !== subTxt) sub.textContent = subTxt;
+    $('.wo-mini', woMini).classList.toggle('alert', over);
   }
 
   /* ---------- punching bag timer: optional, counts down from 5 minutes unless you change it ----------
@@ -5142,10 +5229,13 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     const prevAct = ae && woEl.contains(ae) && ae.dataset ? ae.dataset.wo : null;
     const body = wo.phase === 'rest' ? restHTML() : wo.phase === 'done' ? finHTML() : setHTML();
     box.innerHTML = `
-      <header class="wo-top">
-        <button class="wo-icon" type="button" data-wo="end" aria-label="End workout">${ICON.x}</button>
-        <div class="wo-title"><span class="wo-name" id="woName">${wo.bonus ? 'Bonus · ' : ''}${esc(PS.SESSIONS[wo.type].name)}</span><span class="wo-clock">${fmtDur((wo.ended || Date.now()) - wo.started)}</span></div>
-        <button class="wo-icon" type="button" data-wo="sound" aria-pressed="${!!state.settings.sound}" aria-label="Beep when rest ends">${state.settings.sound ? ICON.sound : ICON.mute}</button>
+      <header class="wo-top wide">
+        <button class="wo-icon" type="button" data-wo="min" aria-label="Minimize. The workout keeps going">${ICON.down}</button>
+        <div class="wo-title"><span class="wo-name" id="woName">${esc(PS.SESSIONS[wo.type].name)}</span><span class="wo-clock">${wo.bonus ? 'Bonus · ' : ''}${fmtDur((wo.ended || Date.now()) - wo.started)}</span></div>
+        <div class="wo-tr">
+          <button class="wo-icon" type="button" data-wo="sound" aria-pressed="${!!state.settings.sound}" aria-label="Beep when rest ends">${state.settings.sound ? ICON.sound : ICON.mute}</button>
+          <button class="wo-icon" type="button" data-wo="end" aria-label="End workout">${ICON.x}</button>
+        </div>
       </header>
       ${progHTML()}
       <div class="wo-main">${body}</div>
@@ -5153,7 +5243,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     woTick();
     const same = prevAct && !['done', 'skiprest', 'end', 'keep', 'finish', 'undo', 'prev', 'skipwarm'].includes(prevAct) ? $(`[data-wo="${prevAct}"]`, box) : null;
     const f = same || $(woDialog ? '[data-wo="keep"]' : '.wo-go', box);
-    if (f) f.focus({ preventScroll: true });
+    if (f && !woMin) f.focus({ preventScroll: true });
   }
 
   function progHTML() {
@@ -5292,7 +5382,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     if (!wo || !woEl) return;
     const now = Date.now();
     const clock = $('.wo-clock', woEl);
-    if (clock) clock.textContent = fmtDur((wo.ended || now) - wo.started);
+    if (clock) clock.textContent = (wo.bonus ? 'Bonus · ' : '') + fmtDur((wo.ended || now) - wo.started);
     if (wo.phase === 'rest') {
       const rem = (wo.restEnd - now) / 1000;
       if (rem <= 0) { endRest(false); return; }
@@ -5308,6 +5398,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
       const ago = Math.floor((now - wo.restOver) / 1000);
       if (o) o.textContent = ago < 10 ? 'Rest over. Go!' : `Rest over ${PS.mmss(ago)} ago`;
     }
+    if (woMin) updateMini();
   }
 
   function endRest(quiet) {
@@ -5324,6 +5415,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     }
     renderWorkout();
     announce(`Rest over. ${stepLine(wo.steps[wo.i])}`);
+    if (woMin && woMini) { updateMini(); const l = $('.sr', woMini); if (l) l.textContent = `Rest over. ${stepLine(wo.steps[wo.i])}`; }
   }
 
   function finishSet() {
@@ -5445,6 +5537,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
         if (state.settings.sound) { audioUnlock(); beep(880, 0.12, 0.25); }
         renderWorkout();
         return;
+      case 'min': minimizeWorkout(); return;
       case 'end': woDialog = true; renderWorkout(); return;
       case 'keep': woDialog = false; renderWorkout(); return;
       case 'finish':
@@ -6059,7 +6152,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
   $('#settingsBtn').addEventListener('click', openSettings);
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState !== 'visible') return;
-    if (woEl) { keepAwake(); audioUnlock(); woTick(); return; }
+    if (woEl) { keepAwake(); audioUnlock(); woTick(); if (!woMin) return; }
     if (bagEl) { if (bag && bag.endAt) { keepAwake(); audioUnlock(); bagStep(); } return; }
     if (T() !== renderedDay && !sheet && !viewer) render();
   });
