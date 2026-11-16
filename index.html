@@ -529,6 +529,16 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
 }
 .bonus-btn span { font-size: 18px; line-height: 1; }
 .bonus-btn:active { background: var(--raised); }
+
+/* ---------- punching bag timer button ---------- */
+.bag-btn {
+  width: 100%; height: 46px; margin-top: 10px; border-radius: 999px;
+  border: 1.5px solid var(--line-2); color: var(--ink);
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  font-size: 14.5px; font-weight: 700;
+}
+.bag-btn small { font-size: 13px; font-weight: 600; color: var(--ink-3); margin-left: 2px; }
+.bag-btn:active { background: var(--raised); }
 .what .t .tag {
   display: inline-block; margin-left: 6px; padding: 0 7px; border-radius: 99px; border: 1px solid var(--ink-3);
   font-size: 10px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; vertical-align: 2px; color: var(--ink-2);
@@ -942,6 +952,12 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
 .wo-rest.has-feel .ring-time { font-size: clamp(42px, 12vw, 58px); }
 .wo-adjrow { display: flex; gap: 10px; }
 .wo-adjrow .btn { height: 42px; min-width: 92px; }
+.wo-adjrow .btn:disabled { opacity: 0.35; }
+.wo.bag-wo:focus { outline: none; }
+.bag-t .ring { width: min(70vw, 40vh, 290px); }
+.bag-t .ring-time { font-size: clamp(56px, 19vw, 90px); }
+.bag-tip { font-size: 13.5px; line-height: 1.45; color: var(--ink-3); max-width: 34ch; }
+@media (max-height: 640px) and (orientation: portrait) { .bag-tip { display: none; } }
 .wo-next { font-size: 14px; color: var(--ink-2); max-width: 34ch; }
 .wo-next b { color: var(--ink); }
 .wo-next-goal { display: block; }
@@ -994,6 +1010,9 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
   .ring-time, .wo-rest.has-feel .ring-time, .wo-rest.has-load .ring-time, .wo-rest.has-load.has-feel .ring-time { font-size: clamp(40px, 13vh, 58px); }
   .wo-load { padding: 8px 12px 9px; }
   .wo-go { height: 56px; font-size: 25px; margin-top: 0; }
+  .bag-t .ring { width: min(38vw, 56vh, 240px); }
+  .bag-t .ring-time { font-size: clamp(44px, 15vh, 68px); }
+  .bag-tip { display: none; }
   .fin-time { font-size: clamp(44px, 15vh, 66px); }
   .fin-list li { padding: 7px 0; }
 }
@@ -1911,7 +1930,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
       settings: {
         liftDays: [1, 3], swimDay: 4, ballDay: 5, swimGoal: 'faster1k',
         swimBase: { dist: 1000, time: 1500 }, since: '2026-10-11', tipOff: null,
-        rest: { work: 150, pull: 120, warm: 60 }, sound: true, crawl: true,
+        rest: { work: 150, pull: 120, warm: 60 }, sound: true, crawl: true, bagMins: 5,
         morningDays: [0, 1, 2, 3, 4], morningSince: null,
         bodyWeight: 72, age: null,
       },
@@ -2353,6 +2372,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     expand: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"/></svg>',
     play: '<svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><path d="M4 2.5v11l9.5-5.5z" fill="currentColor"/></svg>',
     sound: '<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>',
+    timer: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 13.5V9.5M9.5 2.5h5M18.5 6.5l1.5-1.5"/></svg>',
     mute: '<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M17 9.5l5 5M22 9.5l-5 5"/></svg>',
   };
 
@@ -2389,6 +2409,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     s.settings.rest = Object.assign({}, base.settings.rest, s.settings.rest || {});
     if (typeof s.settings.sound !== 'boolean') s.settings.sound = true;
     if (typeof s.settings.crawl !== 'boolean') s.settings.crawl = true;
+    if (!(s.settings.bagMins >= 1 && s.settings.bagMins <= 30)) s.settings.bagMins = 5;
     if (!(s.settings.bodyWeight > 0)) s.settings.bodyWeight = 72;
     if (!(s.settings.age > 0)) s.settings.age = null;
     s.lifts = Array.isArray(s.lifts) ? s.lifts : [];
@@ -3786,7 +3807,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
         <h3>Run + Bag</h3>
         <div class="rows">
           <div class="row"><span class="name">Run</span><span class="val">${fmtKm(rd.km)}<small>km</small></span><span class="meta">${lr ? `Last time ${PS.mmss(lr.run.time)} · ${PS.mmss(PS.runPace(lr))} per km` : 'About 10 minutes'}</span></div>
-          <div class="row"><span class="name">Punching bag</span><span class="val">5<small>min</small></span><span class="meta">Wrap your hands. Keep your wrists straight and land on the first two knuckles.</span></div>
+          <div class="row"><span class="name">Punching bag</span><span class="val">${bagMins()}<small>min</small></span><span class="meta">Wrap your hands. Keep your wrists straight and land on the first two knuckles.</span></div>
         </div>
       </article>`;
     const mRate = pctOf(st.month.done, st.month.possible);
@@ -3798,6 +3819,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
       <section aria-label="${bon ? 'Bonus run' : 'Next morning session'}">
         <div class="swipe">${trackHTML('Done', bon ? 'Not today' : 'Skip')}${card}</div>
         ${actionsHTML('Done', bon ? 'Not today' : 'Skip')}
+        <button class="bag-btn" type="button" data-act="bag">${ICON.timer}Bag timer<small>${bagMins()} min</small></button>
         ${bonusBtnHTML('mornings', t)}
       </section>
       <section aria-label="Mornings at a glance">
@@ -4695,6 +4717,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     else if (act === 'wk-start') openWorkout(false);
     else if (act === 'wk-log') HANDLERS[b.dataset.tab].done();
     else if (act === 'wk-past') openPastWeeks();
+    else if (act === 'bag') openBag();
     else if (act === 'more-lifts') { showAllLifts = !showAllLifts; render(); }
     else if (act === 'more-swims') { showAllSwims = !showAllSwims; render(); }
     else if (act === 'edit-lift') editLift(b.dataset.id);
@@ -4875,7 +4898,15 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
   }
 
   /* sound, vibration and keeping the screen on */
+  /* On iPhone, a web app's sound otherwise takes over the phone's audio, so Spotify or Music
+     pauses as soon as the beeps switch on. 'ambient' mixes the beeps in over the music instead.
+     Like before, they're silent while the ring/silent switch is on silent. iOS 17 and later. */
+  function mixWithMusic() {
+    try { if (navigator.audioSession && navigator.audioSession.type !== 'ambient') navigator.audioSession.type = 'ambient'; } catch (e) { /* not supported */ }
+  }
+  mixWithMusic();
   function audioUnlock() {
+    mixWithMusic();
     try {
       const AC = window.AudioContext || window.webkitAudioContext;
       if (!AC) return;
@@ -4957,6 +4988,151 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
     if (woEl) { woEl.remove(); woEl = null; }
     unlockScroll('workout');
     setInert(false);
+  }
+
+  /* ---------- punching bag timer: optional, counts down from 5 minutes unless you change it ----------
+     A short beep each minute and three at the end (when sound is on). The time comes from the clock,
+     so it stays right if the phone locks; the screen is kept on while it runs. */
+  let bag = null, bagEl = null, bagTick = null;
+  const bagMins = () => Math.max(1, Math.min(30, Math.round(state.settings.bagMins || 5)));
+  const bagLeft = () => (bag.endAt ? Math.max(0, (bag.endAt - Date.now()) / 1000) : bag.left);
+  const morningOpenToday = () => isBonus('mornings') || PS.morningDue(state, T()).due === T();
+  function bagSay(msg) {
+    const live = bagEl && $('.wo-live', bagEl);
+    if (live) { live.textContent = ''; setTimeout(() => { live.textContent = msg; }, 30); }
+  }
+  function openBag() {
+    const total = bagMins() * 60;
+    bag = { total, left: total, endAt: 0, done: false, mark: null };
+    if (!bagEl) {
+      bagEl = document.createElement('div');
+      bagEl.className = 'wo bag-wo';
+      bagEl.setAttribute('role', 'dialog');
+      bagEl.setAttribute('aria-modal', 'true');
+      bagEl.setAttribute('aria-labelledby', 'bagName');
+      bagEl.tabIndex = -1; // a tap on a blank part keeps focus here, so Escape still closes it
+      bagEl.innerHTML = '<div class="wo-in"></div><div class="wo-live sr" aria-live="assertive"></div>';
+      document.body.appendChild(bagEl);
+      bagEl.addEventListener('pointerdown', audioUnlock);
+      bagEl.addEventListener('click', onBagClick);
+      bagEl.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') { e.preventDefault(); closeBag(); }
+        else if (e.key === 'Tab') trapTab(e, bagEl);
+      });
+    }
+    lockScroll('bag');
+    setInert(true);
+    audioUnlock();
+    renderBag();
+    clearInterval(bagTick);
+    bagTick = setInterval(bagStep, 250);
+  }
+  function closeBag() {
+    clearInterval(bagTick);
+    bagTick = null;
+    releaseAwake();
+    if (bagEl) { bagEl.remove(); bagEl = null; }
+    bag = null;
+    unlockScroll('bag');
+    setInert(false);
+    render();
+    const b = $('.bag-btn');
+    if (b) b.focus({ preventScroll: true });
+  }
+  function renderBag() {
+    if (!bagEl || !bag) return;
+    const rem = bagLeft(), running = !!bag.endAt, started = rem < bag.total;
+    const C = 289.03, frac = bag.total ? Math.min(1, rem / bag.total) : 0;
+    const canLog = bag.done && morningOpenToday();
+    const label = bag.done ? 'Time!' : running ? 'Go' : started ? 'Paused' : 'Ready';
+    const go = bag.done ? (canLog ? 'Log this morning' : 'Again') : running ? 'Pause' : started ? 'Resume' : 'Start';
+    const links = [];
+    if (!running && started && !bag.done) links.push('<button class="link" type="button" data-bt="reset">Start over</button>');
+    if (bag.done && canLog) links.push('<button class="link" type="button" data-bt="again">Again</button>');
+    const box = $('.wo-in', bagEl);
+    const ae = document.activeElement;
+    const prev = ae && bagEl.contains(ae) && ae.dataset ? ae.dataset.bt : null;
+    box.innerHTML = `
+      <header class="wo-top">
+        <button class="wo-icon" type="button" data-bt="close" aria-label="Close the bag timer">${ICON.x}</button>
+        <div class="wo-title"><span class="wo-name" id="bagName">Punching bag</span><span class="wo-clock">${bagMinsTxt(bag.total)}</span></div>
+        <button class="wo-icon" type="button" data-bt="sound" aria-pressed="${!!state.settings.sound}" aria-label="Beep each minute">${state.settings.sound ? ICON.sound : ICON.mute}</button>
+      </header>
+      <div class="wo-main">
+        <div class="wo-rest bag-t">
+          <div class="wo-info">
+            <div class="ring" role="timer" aria-label="Time left on the bag">
+              <svg viewBox="0 0 100 100" aria-hidden="true"><circle class="ring-track" cx="50" cy="50" r="46"/><circle class="ring-bar" cx="50" cy="50" r="46" style="stroke-dasharray:${C};stroke-dashoffset:${(C * (1 - frac)).toFixed(2)}"/></svg>
+              <div class="ring-txt"><span class="ring-time">${PS.mmss(Math.ceil(rem))}</span><span class="ring-lbl">${label}</span></div>
+            </div>
+            <div class="wo-adjrow"><button class="btn line" type="button" data-bt="m-" aria-label="One minute less"${bag.total <= 60 ? ' disabled' : ''}>−1 min</button><button class="btn line" type="button" data-bt="m+" aria-label="One minute more"${bag.total >= 1800 ? ' disabled' : ''}>+1 min</button></div>
+          </div>
+          <div class="wo-act">
+            <p class="wo-next">${bag.done ? `That's ${bagMinsTxt(bag.total)} on the bag.` : state.settings.sound ? 'A beep each minute, three at the end.' : 'Sound is off. Tap the speaker for beeps.'}</p>
+            <button class="wo-go" type="button" data-bt="${bag.done && canLog ? 'log' : 'go'}">${go}</button>
+            ${links.length ? `<div class="wo-links">${links.join('')}</div>` : ''}
+            <p class="bag-tip">Wrap your hands. Keep your wrists straight and land on the first two knuckles.</p>
+          </div>
+        </div>
+      </div>`;
+    const f = (prev && $(`[data-bt="${prev}"]:not([disabled])`, box)) || $('.wo-go', box);
+    if (f) f.focus({ preventScroll: true });
+  }
+  const bagMinsTxt = (sec) => `${Math.round(sec / 60)} min`;
+  function bagStep() {
+    if (!bag || !bagEl || !bag.endAt) return;
+    const rem = (bag.endAt - Date.now()) / 1000;
+    if (rem <= 0) { finishBag(); return; }
+    const m = Math.ceil(rem / 60);
+    if (bag.mark != null && m < bag.mark) { beep(880, 0.18, 0.3); bagSay(`${m} ${m === 1 ? 'minute' : 'minutes'} left`); }
+    bag.mark = m;
+    const bar = $('.ring-bar', bagEl);
+    if (bar) bar.style.strokeDashoffset = (289.03 * (1 - Math.min(1, rem / bag.total))).toFixed(2);
+    const tt = $('.ring-time', bagEl);
+    if (tt) tt.textContent = PS.mmss(Math.ceil(rem));
+  }
+  function finishBag() {
+    bag.endAt = 0;
+    bag.left = 0;
+    bag.done = true;
+    releaseAwake();
+    [0, 320, 640].forEach((ms) => setTimeout(() => beep(1175, 0.22, 0.35), ms));
+    try { if (navigator.vibrate) navigator.vibrate([300, 150, 300, 150, 300]); } catch (e) { /* ignore */ }
+    if (!reduced && bagEl) { bagEl.classList.remove('flash'); void bagEl.offsetWidth; bagEl.classList.add('flash'); }
+    renderBag();
+    bagSay('Time! The bag is done.');
+  }
+  function onBagClick(e) {
+    const b = e.target.closest('[data-bt]');
+    if (!b || !bag) return;
+    const a = b.dataset.bt;
+    if (a === 'close') { closeBag(); return; }
+    if (a === 'log') { closeBag(); HANDLERS.mornings.done(); return; }
+    if (a === 'sound') { state.settings.sound = !state.settings.sound; save(); audioUnlock(); renderBag(); return; }
+    if (a === 'go' || a === 'again') {
+      if (bag.done || a === 'again') { bag.left = bag.total; bag.done = false; }
+      if (bag.endAt) {
+        bag.left = bagLeft(); bag.endAt = 0; releaseAwake(); bagSay('Paused');
+      } else {
+        bag.endAt = Date.now() + bag.left * 1000; bag.mark = Math.ceil(bag.left / 60);
+        audioUnlock(); keepAwake(); bagSay(`Go. ${PS.mmss(Math.ceil(bag.left))} on the clock.`);
+      }
+    } else if (a === 'reset') {
+      bag.left = bag.total; bag.endAt = 0; bag.done = false; bagSay('Back to the start');
+    } else if (a === 'm-' || a === 'm+') {
+      const total = Math.max(60, Math.min(1800, bag.total + (a === 'm+' ? 60 : -60)));
+      const dd = total - bag.total;
+      if (!dd) return;
+      const fresh = !bag.endAt && !bag.done && bag.left >= bag.total;
+      bag.total = total;
+      if (bag.endAt) { bag.endAt = Math.max(Date.now() + 1000, bag.endAt + dd * 1000); bag.mark = Math.ceil(bagLeft() / 60); }
+      else if (bag.done || fresh) { bag.left = total; bag.done = false; }
+      else bag.left = Math.max(1, Math.min(total, bag.left + dd));
+      state.settings.bagMins = total / 60;
+      save();
+      bagSay(`${total / 60} minutes`);
+    }
+    renderBag();
   }
 
   function renderWorkout() {
@@ -5884,6 +6060,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState !== 'visible') return;
     if (woEl) { keepAwake(); audioUnlock(); woTick(); return; }
+    if (bagEl) { if (bag && bag.endAt) { keepAwake(); audioUnlock(); bagStep(); } return; }
     if (T() !== renderedDay && !sheet && !viewer) render();
   });
   window.addEventListener('storage', (e) => { if (e.key === KEY && !sheet && !viewer && !woEl) { state = load(); render(); } });
