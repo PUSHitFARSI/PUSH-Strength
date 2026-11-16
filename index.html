@@ -867,12 +867,55 @@ body.has-mini .toast:not(.top) { bottom: calc(var(--tab-h) + env(safe-area-inset
 .wo-top .wo-icon:last-child { justify-self: end; }
 .wo-top.wide { grid-template-columns: 96px minmax(0, 1fr) 96px; }
 .wo-tr { justify-self: end; display: flex; gap: 8px; }
+.wo-tl { justify-self: start; display: flex; gap: 8px; }
 .wo-name { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
 @media (max-width: 400px) {
   .wo-top.wide { grid-template-columns: 82px minmax(0, 1fr) 82px; }
   .wo-top.wide .wo-icon { width: 38px; height: 38px; }
-  .wo-tr { gap: 6px; }
+  .wo-tr, .wo-tl { gap: 6px; }
   .wo-top.wide .wo-name { font-size: clamp(14px, 4.6vw, 19px); }
+}
+
+/* screen lock: black, dim, taps ignored, press and hold to act */
+.lk {
+  position: fixed; inset: 0; z-index: 90; background: #000; color: #8a8a8a;
+  display: flex; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+  padding: calc(env(safe-area-inset-top, 0px) + 14px) calc(env(safe-area-inset-right, 0px) + var(--gut)) calc(env(safe-area-inset-bottom, 0px) + 18px) calc(env(safe-area-inset-left, 0px) + var(--gut));
+  box-sizing: border-box; outline: none;
+}
+.lk.flash { animation: lk-flash 1.2s ease-out; }
+@keyframes lk-flash { 0%, 30% { background: #fff; } 100% { background: #000; } }
+.lk-in { flex: 1; min-height: 0; max-width: 560px; margin: 0 auto; width: 100%; display: flex; flex-direction: column; }
+.lk-top { flex: none; display: flex; justify-content: space-between; gap: 12px; font-size: 13px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #5e5e5e; font-variant-numeric: tabular-nums; }
+.lk-top span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lk-mid { flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 8px; }
+.lk-lbl { font-size: 14px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; }
+.lk-lbl.go { color: #e6e6e6; }
+.lk-sub { min-height: 1.2em; font-size: 14px; font-variant-numeric: tabular-nums; }
+.lk-time { font-size: min(30vw, 22vh, 150px); font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; color: #c4c4c4; margin-bottom: 10px; }
+.lk-what { font-size: 16px; color: #8a8a8a; max-width: 100%; }
+.lk-w { font-size: min(11vw, 7.5vh, 52px); font-weight: 800; line-height: 1.05; color: #c4c4c4; font-variant-numeric: tabular-nums; }
+.lk-w.big { font-size: min(17vw, 12vh, 84px); }
+.lk-w small { font-size: 0.45em; font-weight: 700; }
+.lk-w .lk-x { color: #8a8a8a; white-space: nowrap; }
+.lk-pl { font-size: 16px; color: #8a8a8a; }
+.lk-bot { flex: none; display: flex; justify-content: center; align-items: flex-end; gap: 36px; padding-top: 12px; }
+.lk-hold { outline: none; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 4px; color: #8a8a8a; font-size: 13px; font-weight: 700; -webkit-tap-highlight-color: transparent; max-width: 150px; text-align: center; }
+.lk-hold.main { color: #b0b0b0; }
+.lk-ring { position: relative; width: 72px; height: 72px; border-radius: 50%; display: grid; place-items: center; box-shadow: inset 0 0 0 2px #2c2c2c; }
+.lk-hold.main .lk-ring { width: 92px; height: 92px; }
+.lk-hold.main .lk-ring::after { content: ''; width: 34%; height: 34%; border-radius: 50%; background: #2c2c2c; }
+.lk-hold[data-lk="unlock"].main .lk-ring::after { display: none; }
+.lk-ring .lk-prog { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+.lk-prog circle { fill: none; stroke: #d8d8d8; stroke-width: 4; stroke-dasharray: 301.59; stroke-dashoffset: 301.59; }
+.lk-hold.holding .lk-prog circle { stroke-dashoffset: 0; transition: stroke-dashoffset 0.9s linear; }
+.lk-hold.holding { color: #e6e6e6; }
+.lk-hold:focus-visible .lk-ring { box-shadow: inset 0 0 0 2px #2c2c2c, 0 0 0 3px #8a8a8a; }
+@media (max-height: 520px) {
+  .lk-bot { gap: 24px; padding-top: 6px; }
+  .lk-ring { width: 56px; height: 56px; }
+  .lk-hold.main .lk-ring { width: 64px; height: 64px; }
+  .lk-mid { gap: 4px; }
 }
 /* minimized workout: a bar above the tabs */
 .wo-mini-wrap {
@@ -2505,6 +2548,7 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
     play: '<svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><path d="M4 2.5v11l9.5-5.5z" fill="currentColor"/></svg>',
     sound: '<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>',
     down: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>',
+    lock: '<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="2.2"/><path d="M8.5 10.5V7.5a3.5 3.5 0 0 1 7 0v3"/></svg>',
     up: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>',
     timer: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 13.5V9.5M9.5 2.5h5M18.5 6.5l1.5-1.5"/></svg>',
     mute: '<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M17 9.5l5 5M22 9.5l-5 5"/></svg>',
@@ -5192,6 +5236,7 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
   }
 
   function closeWorkout() {
+    if (lk && lk.src === 'wo') closeLock(true);
     clearInterval(woTimer);
     woTimer = null;
     releaseAwake();
@@ -5249,6 +5294,173 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
     $('.wo-mini', woMini).classList.toggle('alert', over);
   }
 
+  /* ---------- screen lock: a dark screen for the gym ----------
+     Web apps can't show anything on the iPhone lock screen, so this is the stand-in: black, big
+     rest timer and the next weight, and taps do nothing. Press and hold a button to act: unlock,
+     or (on a barbell set) mark the set done with the planned reps, so you can stay locked all
+     session. The workout or bag timer underneath keeps running, beeps included. */
+  let lk = null, lkHold = null;
+  const LK_HOLD = 900;
+  const LK_C = 301.59; // ring circumference, r = 48
+  function lockSay(msg) {
+    const live = lk && $('.lk-live', lk.el);
+    if (live) { live.textContent = ''; setTimeout(() => { live.textContent = msg; }, 30); }
+  }
+  function lockHost() { return lk ? (lk.src === 'wo' ? woEl : bagEl) : null; }
+  function openLock(src) {
+    if (lk) closeLock(true);
+    const el = document.createElement('div');
+    el.className = 'lk';
+    el.setAttribute('role', 'dialog');
+    el.setAttribute('aria-modal', 'true');
+    el.setAttribute('aria-label', 'Screen locked');
+    el.tabIndex = -1;
+    el.innerHTML = '<div class="lk-in"></div><div class="lk-live sr" aria-live="assertive"></div>';
+    document.body.appendChild(el);
+    lk = { src, el, sig: '' };
+    const host = lockHost();
+    if (host) host.inert = true;
+    el.addEventListener('pointerdown', lockDown);
+    ['pointerup', 'pointercancel'].forEach((t) => el.addEventListener(t, lockUp));
+    el.addEventListener('pointermove', (e) => { if (lkHold && lkHold.id === e.pointerId && Math.hypot(e.clientX - lkHold.x, e.clientY - lkHold.y) > 40) lockUp(); });
+    el.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); });
+    el.addEventListener('contextmenu', (e) => e.preventDefault());
+    el.addEventListener('keydown', (e) => {
+      if (e.key === 'Tab') { trapTab(e, el); return; }
+      const b = e.target.closest && e.target.closest('[data-lk]');
+      // a keyboard press is on purpose, so it acts straight away
+      if (b && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); lockAct(b.dataset.lk); return; }
+      if (e.key === 'Escape') { e.preventDefault(); lockSay('Locked. Press and hold Unlock.'); }
+    });
+    audioUnlock();
+    if (src === 'wo' || (bag && bag.endAt)) keepAwake();
+    lockTick();
+    const u = $('[data-lk="unlock"]', el);
+    (u || el).focus({ preventScroll: true });
+    lockSay('Screen locked. Press and hold to unlock.');
+  }
+  function closeLock(quiet) {
+    if (!lk) return;
+    lockUp();
+    const host = lockHost(), src = lk.src;
+    lk.el.remove();
+    lk = null;
+    if (host) host.inert = false;
+    if (quiet) return;
+    if (src === 'wo') renderWorkout(); else renderBag();
+  }
+  function lockDown(e) {
+    audioUnlock();
+    const b = e.target.closest('[data-lk]');
+    if (!b || (e.pointerType === 'mouse' && e.button !== 0)) { e.preventDefault(); return; }
+    e.preventDefault();
+    lockUp();
+    b.classList.add('holding');
+    const act = b.dataset.lk;
+    lkHold = { b, act, id: e.pointerId, x: e.clientX, y: e.clientY, t: setTimeout(() => {
+      lkHold = null;
+      b.classList.remove('holding');
+      lockAct(act);
+    }, LK_HOLD) };
+  }
+  function lockUp() {
+    if (!lkHold) return;
+    clearTimeout(lkHold.t);
+    lkHold.b.classList.remove('holding');
+    lkHold = null;
+  }
+  function lockAct(act) {
+    if (!lk) return;
+    try { if (navigator.vibrate) navigator.vibrate(30); } catch (e) { /* ignore */ }
+    if (act === 'unlock') { closeLock(); return; }
+    if (lk.src === 'wo' && wo) {
+      if (act === 'done' && wo.phase === 'set') finishSet();
+      else if (act === 'next' && wo.phase === 'rest') endRest(true);
+      lockTick();
+      const st = wo.phase === 'done' ? null : wo.steps[wo.i];
+      lockSay(wo.phase === 'done' ? 'Workout done. Unlock to save it.' : wo.phase === 'rest' ? `Rest ${PS.mmss(Math.ceil((wo.restEnd - Date.now()) / 1000))}. Next: ${stepLine(st)}` : stepLine(st));
+    } else if (lk.src === 'bag' && bag && act === 'start') {
+      if (bag.done) { bag.left = bag.total; bag.done = false; }
+      bag.endAt = Date.now() + bag.left * 1000; bag.mark = Math.ceil(bag.left / 60);
+      keepAwake(); renderBag();
+      lockSay(`Go. ${PS.mmss(Math.ceil(bag.left))} on the clock.`);
+    }
+  }
+  const lkBtn = (act, label, main) => `<button class="lk-hold${main ? ' main' : ''}" type="button" data-lk="${act}" aria-label="${esc(label)}. Press and hold">
+      <span class="lk-ring"><svg class="lk-prog" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="48"/></svg>${act === 'unlock' ? ICON.lock : act === 'next' ? ICON.play : ''}</span>
+      <span class="lk-bl">${esc(label)}</span></button>`;
+  /* The sets and weight a locked screen shows for workout step i. */
+  function lockSet(i) {
+    const st = wo.steps[i];
+    const what = `${liftName(st.k)} · ${st.kind === 'warm' ? 'warm-up' : 'set'} ${st.n} of ${st.of}`;
+    if (st.k === 'pull') return { what, big: wo.add ? `+${PS.kg(wo.add)}<small> kg</small>` : 'Body weight', sub: 'Max reps' };
+    const pl = stepPlates(i);
+    return { what, big: `${PS.kg(stepWeight(st))}<small> kg</small> <span class="lk-x">× ${st.reps}</span>`, sub: pl == null ? '' : pl.length ? `${platesTxt(pl)} a side` : 'Empty bar' };
+  }
+  function lockTick() {
+    if (!lk) return;
+    const box = $('.lk-in', lk.el);
+    const now = Date.now();
+    let sig, html = '';
+    if (lk.src === 'wo') {
+      if (!wo) return;
+      const ph = wo.phase;
+      sig = `wo|${ph}|${wo.i}|${!!wo.restOver}|${JSON.stringify(wo.w)}|${wo.add}`;
+      if (sig !== lk.sig) {
+        const top = `<div class="lk-top"><span>${esc(PS.SESSIONS[wo.type].name)}</span><span class="lk-clock"></span></div>`;
+        let mid, btns;
+        if (ph === 'done') {
+          mid = '<p class="lk-lbl go">Workout done</p><p class="lk-what">Unlock to save it</p>';
+          btns = lkBtn('unlock', 'Hold to unlock', true);
+        } else if (ph === 'rest') {
+          const s = lockSet(wo.i);
+          mid = `<p class="lk-lbl">Rest</p><div class="lk-time" role="timer"></div>
+            <p class="lk-what">Next · ${esc(s.what)}</p><div class="lk-w">${s.big}</div>${s.sub ? `<p class="lk-pl">${esc(s.sub)}</p>` : ''}`;
+          btns = lkBtn('next', 'Skip rest') + lkBtn('unlock', 'Unlock');
+        } else {
+          const s = lockSet(wo.i), st = wo.steps[wo.i];
+          mid = `<p class="lk-lbl${wo.restOver ? ' go' : ''}">${wo.restOver ? 'Rest over · go' : 'Now'}</p><p class="lk-sub"></p>
+            <p class="lk-what">${esc(s.what)}</p><div class="lk-w big">${s.big}</div>${s.sub ? `<p class="lk-pl">${esc(s.sub)}</p>` : ''}`;
+          btns = st.k === 'pull'
+            ? lkBtn('unlock', 'Unlock to log reps', true)
+            : lkBtn('done', st.kind === 'work' ? `Set done · ${st.reps} reps` : 'Warm-up done', true) + lkBtn('unlock', 'Unlock');
+        }
+        html = `${top}<div class="lk-mid">${mid}</div><div class="lk-bot">${btns}</div>`;
+      }
+    } else {
+      if (!bag) return;
+      const running = !!bag.endAt, rem = bagLeft();
+      sig = `bag|${running}|${bag.done}|${bag.total}`;
+      if (sig !== lk.sig) {
+        const lbl = bag.done ? 'Time!' : running ? 'Go' : rem < bag.total ? 'Paused' : 'Ready';
+        const start = !running ? lkBtn('start', bag.done ? 'Go again' : rem < bag.total ? 'Resume' : 'Start', true) : '';
+        html = `<div class="lk-top"><span>Punching bag</span><span>${bagMinsTxt(bag.total)}</span></div>
+          <div class="lk-mid"><p class="lk-lbl${bag.done ? ' go' : ''}">${lbl}</p><div class="lk-time" role="timer"></div></div>
+          <div class="lk-bot">${start}${lkBtn('unlock', start ? 'Unlock' : 'Hold to unlock', !start)}</div>`;
+      }
+    }
+    if (html) {
+      const ae = document.activeElement, keep = ae && lk.el.contains(ae) && ae.dataset ? ae.dataset.lk : null;
+      lockUp();
+      box.innerHTML = html;
+      lk.sig = sig;
+      const f = (keep && $(`[data-lk="${keep}"]`, box)) || $('[data-lk="unlock"]', box);
+      if (f && lk.el.contains(document.activeElement) || document.activeElement === document.body) (f || lk.el).focus({ preventScroll: true });
+    }
+    // the live parts
+    const t = $('.lk-time', box);
+    if (lk.src === 'wo') {
+      const c = $('.lk-clock', box);
+      if (c) c.textContent = fmtDur((wo.ended || now) - wo.started);
+      if (t) t.textContent = PS.mmss(Math.max(0, Math.ceil((wo.restEnd - now) / 1000)));
+      const o = $('.lk-sub', box);
+      if (o) {
+        const ago = wo.restOver ? Math.floor((now - wo.restOver) / 1000) : -1;
+        o.textContent = ago >= 10 ? `${PS.mmss(ago)} ago` : '';
+      }
+    } else if (t) t.textContent = PS.mmss(Math.ceil(bagLeft()));
+  }
+
   /* ---------- punching bag timer: optional, counts down from 5 minutes unless you change it ----------
      A short beep each minute and three at the end (when sound is on). The time comes from the clock,
      so it stays right if the phone locks; the screen is kept on while it runs. */
@@ -5287,6 +5499,7 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
     bagTick = setInterval(bagStep, 250);
   }
   function closeBag() {
+    if (lk && lk.src === 'bag') closeLock(true);
     clearInterval(bagTick);
     bagTick = null;
     releaseAwake();
@@ -5312,10 +5525,13 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
     const ae = document.activeElement;
     const prev = ae && bagEl.contains(ae) && ae.dataset ? ae.dataset.bt : null;
     box.innerHTML = `
-      <header class="wo-top">
+      <header class="wo-top wide">
         <button class="wo-icon" type="button" data-bt="close" aria-label="Close the bag timer">${ICON.x}</button>
         <div class="wo-title"><span class="wo-name" id="bagName">Punching bag</span><span class="wo-clock">${bagMinsTxt(bag.total)}</span></div>
-        <button class="wo-icon" type="button" data-bt="sound" aria-pressed="${!!state.settings.sound}" aria-label="Beep each minute">${state.settings.sound ? ICON.sound : ICON.mute}</button>
+        <div class="wo-tr">
+          <button class="wo-icon" type="button" data-bt="lock" aria-label="Lock the screen. Shows the timer and ignores taps">${ICON.lock}</button>
+          <button class="wo-icon" type="button" data-bt="sound" aria-pressed="${!!state.settings.sound}" aria-label="Beep each minute">${state.settings.sound ? ICON.sound : ICON.mute}</button>
+        </div>
       </header>
       <div class="wo-main">
         <div class="wo-rest bag-t">
@@ -5335,7 +5551,8 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
         </div>
       </div>`;
     const f = (prev && $(`[data-bt="${prev}"]:not([disabled])`, box)) || $('.wo-go', box);
-    if (f) f.focus({ preventScroll: true });
+    if (f && !(lk && lk.src === 'bag')) f.focus({ preventScroll: true });
+    if (lk && lk.src === 'bag') lockTick();
   }
   const bagMinsTxt = (sec) => `${Math.round(sec / 60)} min`;
   function bagStep() {
@@ -5349,6 +5566,7 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
     if (bar) bar.style.strokeDashoffset = (289.03 * (1 - Math.min(1, rem / bag.total))).toFixed(2);
     const tt = $('.ring-time', bagEl);
     if (tt) tt.textContent = PS.mmss(Math.ceil(rem));
+    if (lk && lk.src === 'bag') lockTick();
   }
   function finishBag() {
     bag.endAt = 0;
@@ -5358,6 +5576,7 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
     [0, 320, 640].forEach((ms) => setTimeout(() => beep(1175, 0.22, 0.35), ms));
     try { if (navigator.vibrate) navigator.vibrate([300, 150, 300, 150, 300]); } catch (e) { /* ignore */ }
     if (!reduced && bagEl) { bagEl.classList.remove('flash'); void bagEl.offsetWidth; bagEl.classList.add('flash'); }
+    if (!reduced && lk && lk.src === 'bag') { lk.el.classList.remove('flash'); void lk.el.offsetWidth; lk.el.classList.add('flash'); }
     renderBag();
     bagSay('Time! The bag is done.');
   }
@@ -5366,6 +5585,7 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
     if (!b || !bag) return;
     const a = b.dataset.bt;
     if (a === 'close') { closeBag(); return; }
+    if (a === 'lock') { openLock('bag'); return; }
     if (a === 'log') { closeBag(); HANDLERS.mornings.done(); return; }
     if (a === 'sound') { state.settings.sound = !state.settings.sound; save(); audioUnlock(); renderBag(); return; }
     if (a === 'go' || a === 'again') {
@@ -5402,7 +5622,10 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
     const body = wo.phase === 'rest' ? restHTML() : wo.phase === 'done' ? finHTML() : setHTML();
     box.innerHTML = `
       <header class="wo-top wide">
-        <button class="wo-icon" type="button" data-wo="min" aria-label="Minimize. The workout keeps going">${ICON.down}</button>
+        <div class="wo-tl">
+          <button class="wo-icon" type="button" data-wo="min" aria-label="Minimize. The workout keeps going">${ICON.down}</button>
+          <button class="wo-icon" type="button" data-wo="lock" aria-label="Lock the screen. Shows the rest timer and weights, and ignores taps">${ICON.lock}</button>
+        </div>
         <div class="wo-title"><span class="wo-name" id="woName">${esc(PS.SESSIONS[wo.type].name)}</span><span class="wo-clock">${wo.bonus ? 'Bonus · ' : ''}${fmtDur((wo.ended || Date.now()) - wo.started)}</span></div>
         <div class="wo-tr">
           <button class="wo-icon" type="button" data-wo="sound" aria-pressed="${!!state.settings.sound}" aria-label="Beep when rest ends">${state.settings.sound ? ICON.sound : ICON.mute}</button>
@@ -5415,7 +5638,7 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
     woTick();
     const same = prevAct && !['done', 'skiprest', 'end', 'keep', 'finish', 'undo', 'prev', 'skipwarm'].includes(prevAct) ? $(`[data-wo="${prevAct}"]`, box) : null;
     const f = same || $(woDialog ? '[data-wo="keep"]' : '.wo-go', box);
-    if (f && !woMin) f.focus({ preventScroll: true });
+    if (f && !woMin && !(lk && lk.src === 'wo')) f.focus({ preventScroll: true });
   }
 
   function progHTML() {
@@ -5571,6 +5794,7 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
       if (o) o.textContent = ago < 10 ? 'Rest over. Go!' : `Rest over ${PS.mmss(ago)} ago`;
     }
     if (woMin) updateMini();
+    if (lk && lk.src === 'wo') lockTick();
   }
 
   function endRest(quiet) {
@@ -5584,8 +5808,10 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
       beep(1175, 0.5, 0.35);
       try { if (navigator.vibrate) navigator.vibrate([200, 100, 200]); } catch (e) { /* ignore */ }
       if (!reduced && woEl) { woEl.classList.remove('flash'); void woEl.offsetWidth; woEl.classList.add('flash'); }
+      if (!reduced && lk && lk.src === 'wo') { lk.el.classList.remove('flash'); void lk.el.offsetWidth; lk.el.classList.add('flash'); }
     }
     renderWorkout();
+    if (lk && lk.src === 'wo') lockSay(`Rest over. ${stepLine(wo.steps[wo.i])}`);
     announce(`Rest over. ${stepLine(wo.steps[wo.i])}`);
     if (woMin && woMini) { updateMini(); const l = $('.sr', woMini); if (l) l.textContent = `Rest over. ${stepLine(wo.steps[wo.i])}`; }
   }
@@ -5649,6 +5875,7 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
     if (a !== 'discard') woDiscardArmed = false;
     switch (a) {
       case 'done': finishSet(); return;
+      case 'lock': openLock('wo'); return;
       case 'r-': case 'r+': {
         const cur = wo.pending != null ? wo.pending : (wo.done[wo.i] != null ? wo.done[wo.i] : st.reps);
         wo.pending = Math.max(0, Math.min(60, cur + (a === 'r+' ? 1 : -1)));
