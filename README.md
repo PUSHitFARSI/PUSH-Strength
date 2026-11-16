@@ -37,7 +37,7 @@ It works offline after the first open.
 
 ## How the weights move
 
-A step is 5 kg for squat and deadlift, and 2.5 kg for bench and overhead press.
+A step is 5 kg for squat and deadlift, and 2.5 kg for bench and overhead press. With **0.5 kg plates** turned on in Settings, bench and overhead press go up 1 kg at a time instead (you'll need two pairs of 0.5 kg plates). Warm-ups stay on the usual weights, and only the work sets use the small plates.
 
 - **Clean**: one step up next time. **Easy**: two steps, unless one of the two sessions before it was hard.
 - **Grind** or a missed rep: the same weight next time.
@@ -46,6 +46,8 @@ A step is 5 kg for squat and deadlift, and 2.5 kg for bench and overhead press.
 - Missed reps twice in a row at the same weight, or three hard sessions there with a miss among them: 10% lighter, then back up a step at a time. On deadlift, the first stall cuts to one heavy set instead.
 - Well short of the reps (under 80%): back to your last clean weight.
 - Two weeks or more off: 10% lighter.
+
+**Light bench.** Deadlift & Press day ends with a light bench after overhead press: one set with the empty bar, then 3 × 8, for a second dose of bench practice each week. It starts at 80% of your bench. Stop each set with about 2 reps left. It goes up a step when all 24 reps felt easy, or after two clean sessions at that weight, and never goes above 85% of your bench. It's logged separately, so it never changes Monday's weights. Turn it off in Settings.
 
 ## Your data
 

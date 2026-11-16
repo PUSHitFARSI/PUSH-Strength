@@ -905,6 +905,8 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
 }
 .wo-prog li span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .wo-prog li b { font-variant-numeric: tabular-nums; }
+.wo-prog.four { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; }
+.wo-prog.four li { padding: 6px 4px; font-size: 12px; flex-direction: column; justify-content: center; gap: 1px; }
 .wo-prog li.cur { border-color: var(--ink); color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
 .wo-prog li.done { background: var(--raised); border-color: var(--raised); color: var(--ink-2); }
 .wo-main { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 18px 0 0; }
@@ -1140,7 +1142,13 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
 
   /* ---------- the program ---------- */
   const BAR = 20;
-  const PLATES = [25, 20, 15, 10, 5, 2.5, 1.25];
+  const PLATES_STD = [25, 20, 15, 10, 5, 2.5, 1.25];
+  let PLATES = PLATES_STD;
+  /* Fractional plates (0.5 kg a side) let bench and overhead press go up 1 kg at a time. */
+  const FRAC_LIFTS = ['bench', 'ohp', 'benchL'];
+  const setFrac = (on) => { PLATES = on ? PLATES_STD.concat([0.5]) : PLATES_STD; };
+  const fracOn = (state) => !!(state && state.settings && state.settings.frac);
+  const stepOf = (state, key) => (fracOn(state) && FRAC_LIFTS.includes(key) ? 1 : (key === 'benchL' ? 2.5 : LIFTS[key].inc));
   const LIFTS = {
     squat: { key: 'squat', name: 'Squat', short: 'Squat', inc: 5, sets: 3, reps: 5, session: 'A' },
     bench: { key: 'bench', name: 'Bench press', short: 'Bench', inc: 2.5, sets: 3, reps: 5, session: 'A' },
@@ -1148,6 +1156,9 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
     ohp: { key: 'ohp', name: 'Overhead press', short: 'OHP', inc: 2.5, sets: 3, reps: 5, session: 'B' },
   };
   const START = { squat: 65, bench: 55, deadlift: 60, ohp: 42.5 };
+  /* Light bench: a second, easier bench day after overhead press, for more bench practice.
+     Kept apart from the heavy bench, so it never changes Monday's weights. */
+  const LIGHT = { key: 'benchL', name: 'Light bench', short: 'Light bench', sets: 3, reps: 8, start: 0.8, cap: 0.85 };
   const SESSIONS = {
     A: { name: 'Squat & Bench', lifts: ['squat', 'bench'] },
     B: { name: 'Deadlift & Press', lifts: ['deadlift', 'ohp'] },
@@ -1209,6 +1220,12 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
     return { lays, removed, extra };
   }
   function warmupPlan(key, w) {
+    // A 1 kg step (63.5 kg, say): warm up as for the 2.5 kg weight just below it, then add the small plates
+    const base = Math.floor(w / 2.5 + 1e-9) * 2.5;
+    if (w - base > 1e-9 && base > BAR && platesPerSide(w) != null) {
+      const p = warmupPlan(key, base);
+      return { steps: p.steps, work: loadFrom(p.steps[p.steps.length - 1][2], w) };
+    }
     const first = [BAR, key === 'deadlift' ? 5 : 8, []];
     const ideal = warmIdeal(key, w);
     if (platesPerSide(w) == null) {
@@ -1272,7 +1289,7 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
   /* What a logged result means for next time.
      `planned` is set when a workout ended before every set was done. */
   function verdict(key, it) {
-    const L = LIFTS[key];
+    const L = key === 'benchL' ? LIGHT : LIFTS[key];
     const total = sum(it.reps);
     const target = it.reps.length * L.reps;
     const missed = it.reps.some((r) => r < L.reps);
@@ -1310,6 +1327,7 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
   const OK_V = ['clean', 'easy'];
   function liftPlan(state, key, onDate, extra) {
     const L = LIFTS[key];
+    const inc = stepOf(state, key);
     let hist = liftHistory(state, key);
     if (extra) hist = hist.concat([extra]).sort(byDate);
     if (!hist.length) {
@@ -1339,11 +1357,11 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
       const prev = hist.slice(0, -1).reverse().map((e) => e.lifts[key]).find((x) => x.w < it.w && isClean(key, x));
       down(prev ? prev.w : roundTo(it.w * 0.9, 2.5), `${kg(it.w)} kg was too heavy last time`, 'back');
     } else if (((v === 'miss' || v === 'drop') && missRun >= 2) || (HARD.includes(v) && hardRun >= 3 && missRun >= 1)) {
-      down(Math.min(it.w - L.inc, roundTo(it.w * 0.9, 2.5)),
+      down(Math.min(it.w - inc, roundTo(it.w * 0.9, 2.5)),
         missRun >= 2 ? `Missed reps twice in a row at ${kg(it.w)} kg, so 10% lighter and build back up` : `Three hard sessions in a row at ${kg(it.w)} kg with missed reps, so 10% lighter and build back up`, 'reset');
     } else if ((v === 'miss' || v === 'grind') && bigJump) {
       const cap = lowestWall(walls.filter((r) => r !== recent[n - 1]));
-      const to = Math.min(before.w + L.inc, cap ? cap.w : Infinity);
+      const to = Math.min(before.w + inc, cap ? cap.w : Infinity);
       down(to, `${kg(it.w)} kg was a ${kg(it.w - before.w)} kg jump and ${v === 'miss' ? 'missed reps' : 'a grind'}. Building up from ${kg(to)} instead`, 'back');
     } else if (v === 'miss') {
       tag = 'Repeat'; why = 'Missed a rep last time'; move = 'repeat';
@@ -1354,7 +1372,7 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
     } else {
       const hardLately = recent.slice(Math.max(0, n - 3), n - 1).some((r) => HARD.includes(r.v));
       const steps = v === 'easy' && !hardLately ? 2 : 1;
-      w = it.w + steps * L.inc;
+      w = it.w + steps * inc;
       why = v === 'easy' ? (steps === 2 ? 'Last time felt easy' : 'Felt easy, but one step at a time after a hard session') : 'Last time was clean';
       move = 'up';
       const cap = lowestWall(walls);
@@ -1409,6 +1427,44 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
     const toGo = 10 - last.reps[0];
     return { reps: last.reps.slice(), add, last, why: `${toGo} more on set one, then ${add ? '2.5 kg more' : 'add weight'}` };
   }
+
+  /* Light bench: 3 × 8, starting at 80% of the heavy bench and never above 85% of it.
+     Goes up a step once all 24 reps are done and it felt easy, or after two clean sessions
+     in a row at that weight. Missed reps or a grind: the same weight again. */
+  function lightHistory(state) {
+    return state.lifts.filter((e) => e.status === 'done' && e.light && e.light.reps && sum(e.light.reps) > 0).sort(byDate);
+  }
+  function lightPlan(state, extra) {
+    let hist = lightHistory(state);
+    if (extra) hist = hist.concat([extra]).sort(byDate);
+    const heavy = liftPlan(state, 'bench').w;
+    const inc = stepOf(state, 'benchL');
+    const fl = (x) => Math.max(BAR, Math.floor(x / inc + 1e-9) * inc);
+    const cap = fl(heavy * LIGHT.cap);
+    const base = { key: 'benchL', sets: LIGHT.sets, reps: LIGHT.reps };
+    if (!hist.length) {
+      return Object.assign(base, { w: fl(heavy * LIGHT.start), tag: 'Start', why: `80% of your bench (${kg(heavy)} kg)`, move: 'start' });
+    }
+    const it = hist[hist.length - 1].light;
+    const v = verdict('benchL', it);
+    const allDone = it.reps.length >= LIGHT.sets && it.reps.every((r) => r >= LIGHT.reps);
+    const prev = hist.length > 1 ? hist[hist.length - 2].light : null;
+    const prevClean = prev && Math.abs(prev.w - it.w) < 1e-9 && prev.reps.every((r) => r >= LIGHT.reps) && OK_V.includes(prev.effort || 'clean');
+    let w = it.w, tag = 'Repeat', why, move = 'repeat';
+    if (!allDone) why = 'Missed reps last time';
+    else if (it.effort === 'grind') why = 'Last time was a grind. It should feel easy';
+    else if (it.effort === 'easy') { w = it.w + inc; why = 'Last time felt easy'; move = 'up'; }
+    else if (prevClean) { w = it.w + inc; why = 'Two clean sessions at this weight'; move = 'up'; }
+    else why = 'Goes up once 3 × 8 feels easy';
+    if (w > cap + 1e-9) {
+      w = Math.max(cap, Math.min(it.w, cap));
+      why = `Kept under 85% of your bench (${kg(heavy)} kg)`;
+      move = w < it.w ? 'back' : 'repeat';
+    }
+    tag = w > it.w + 1e-9 ? `+${kg(w - it.w)}` : w < it.w - 1e-9 ? `−${kg(it.w - w)}` : 'Repeat';
+    return Object.assign(base, { w, tag, why, move, last: it, verdict: v });
+  }
+  const lightOn = (state, type) => type === 'B' && state.settings.lightBench !== false;
 
   /* ---------- scheduling ---------- */
   const isLiftDay = (s, d) => s.liftDays.includes(dow(d));
@@ -1959,7 +2015,7 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
       settings: {
         liftDays: [1, 3], swimDay: 4, ballDay: 5, swimGoal: 'faster1k',
         swimBase: { dist: 1000, time: 1500 }, since: '2026-10-11', tipOff: null,
-        rest: { work: 150, pull: 120, warm: 60 }, sound: true, crawl: true, bagMins: 5,
+        rest: { work: 150, pull: 120, warm: 60 }, sound: true, crawl: true, bagMins: 5, lightBench: true, frac: false,
         morningDays: [0, 1, 2, 3, 4], morningSince: null,
         bodyWeight: 72, age: null,
       },
@@ -1987,7 +2043,7 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
   root.PS = {
     iso, parse, addDays, dow, diff, today, byDate, weekStart, shortDate, dayDate,
     DAY, DAY_LONG, MON, MON_LONG, roundTo, kg, mmss, sum,
-    BAR, LIFTS, START, SESSIONS, platesPerSide, warmups, warmupPlan, loadFrom, isClean, verdict,
+    BAR, LIFTS, LIGHT, START, SESSIONS, setFrac, stepOf, lightHistory, lightPlan, lightOn, platesPerSide, warmups, warmupPlan, loadFrom, isClean, verdict,
     liftHistory, liftPlan, pullHistory, pullPlan,
     isLiftDay, slotType, nextLift, liftNotes, nextWeekly, liftDayTip,
     SWIM_GOALS, DRILLS, swimPace, swimsDone, swimPlan, swimProgress,
@@ -2441,6 +2497,9 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
     if (typeof s.settings.sound !== 'boolean') s.settings.sound = true;
     if (typeof s.settings.crawl !== 'boolean') s.settings.crawl = true;
     if (!(s.settings.bagMins >= 1 && s.settings.bagMins <= 30)) s.settings.bagMins = 5;
+    if (typeof s.settings.lightBench !== 'boolean') s.settings.lightBench = true;
+    if (typeof s.settings.frac !== 'boolean') s.settings.frac = false;
+    PS.setFrac(s.settings.frac);
     if (!(s.settings.bodyWeight > 0)) s.settings.bodyWeight = 72;
     if (!(s.settings.age > 0)) s.settings.age = null;
     s.lifts = Array.isArray(s.lifts) ? s.lifts : [];
@@ -3009,6 +3068,16 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
           ${plateTxt ? `<span class="meta">Plates ${plateTxt}</span>` : ''}
         </div>`;
     }).join('');
+    let lightRow = '';
+    if (PS.lightOn(state, nl.type)) {
+      const lp = PS.lightPlan(state);
+      lightRow = `<div class="row">
+          <span class="name">Light bench <span class="pill" title="${esc(lp.why)}">${esc(lp.tag)}</span></span>
+          <span class="val">${PS.kg(lp.w)}<small>kg</small></span>
+          <span class="meta"><b>${lp.sets} × ${lp.reps}</b><span>After overhead press. Stop each set with 2 reps left</span></span>
+          <span class="meta">${esc(lp.why)}</span>
+        </div>`;
+    }
     const pullRow = `<div class="row">
         <span class="name">Pull-ups</span>
         <span class="val word">${pull.add ? `+${PS.kg(pull.add)}<small>kg</small>` : 'Max reps'}</span>
@@ -3019,7 +3088,7 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
     return `<article class="card${animateCard ? ' enter' : ''}" tabindex="0" aria-label="${nl.bonus ? 'Bonus session, ' : ''}${esc(sess.name)}, ${esc(w.text)}. Swipe right or press the right arrow if you did it, left ${nl.bonus ? 'to cancel the bonus' : 'to skip'}.">
         <div class="card-top"><span class="when">${esc(w.text)}</span>${nl.bonus ? '<span class="pill solid">Bonus</span>' : w.late ? '<span class="pill solid">Make-up</span>' : ''}</div>
         <h3>${sess.name}</h3>
-        <div class="rows">${rows}${pullRow}</div>
+        <div class="rows">${rows}${lightRow}${pullRow}</div>
         ${notes.length ? `<ul class="notes">${notes.map((n) => `<li>${esc(n)}</li>`).join('')}</ul>` : ''}
         <button class="start-btn" type="button" data-act="start">${ICON.play}<span>${startLabel}</span></button>
       </article>`;
@@ -3109,6 +3178,10 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
       else if (it.effort === 'grind') flags.push(`${PS.LIFTS[k].short}: grind`);
       else if (it.effort === 'easy') flags.push(`${PS.LIFTS[k].short}: easy`);
     });
+    if (e.light && e.light.reps && PS.sum(e.light.reps) > 0) {
+      parts.push(`Light bench ${PS.kg(e.light.w)}`);
+      if (PS.verdict('benchL', e.light) !== 'clean' && e.light.reps.some((r) => r < PS.LIGHT.reps)) flags.push(`Light bench: ${PS.sum(e.light.reps)}/${e.light.reps.length * PS.LIGHT.reps} reps`);
+    }
     if (e.pull && e.pull.reps && PS.sum(e.pull.reps) > 0) parts.push(`Pull-ups ${e.pull.reps.join('·')}`);
     return { s: parts.join(' · '), flags };
   }
@@ -4831,13 +4904,25 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
       wp.steps.forEach(([x, r, ps], i) => steps.push({ k, kind: 'warm', n: i + 1, of: wp.steps.length, w: x, reps: r, pl: ps }));
       for (let i = 0; i < p.sets; i++) steps.push({ k, kind: 'work', n: i + 1, of: p.sets, reps: p.reps });
     });
+    if (PS.lightOn(state, nl.type)) {
+      // shoulders are warm from pressing, so one set with the empty bar is enough
+      const lp = PS.lightPlan(state);
+      w.benchL = lp.w;
+      steps.push({ k: 'benchL', kind: 'warm', n: 1, of: 1, w: PS.BAR, reps: 8, pl: [] });
+      for (let i = 0; i < lp.sets; i++) steps.push({ k: 'benchL', kind: 'work', n: i + 1, of: lp.sets, reps: lp.reps });
+    }
     const pp = PS.pullPlan(state);
     for (let i = 0; i < 3; i++) steps.push({ k: 'pull', kind: 'work', n: i + 1, of: 3, reps: pp.reps[i] || pp.reps[pp.reps.length - 1] || 5 });
     const now = Date.now();
     return { v: 1, type: nl.type, started: now, touched: now, steps, i: 0, phase: 'set', restEnd: 0, restTotal: 0, restOver: 0, last: -1, done: {}, effort: {}, w, pl, add: pp.add || 0, pending: null, bonus: !!asBonus };
   }
 
-  const liftName = (k) => (k === 'pull' ? 'Pull-ups' : PS.LIFTS[k].name);
+  const LDEF = (k) => (k === 'benchL' ? PS.LIGHT : PS.LIFTS[k]);
+  const liftName = (k) => (k === 'pull' ? 'Pull-ups' : LDEF(k).name);
+  const liftShort = (k) => (k === 'pull' ? 'Pull-ups' : LDEF(k).short);
+  // the barbell lifts in this workout, light bench included when it's there
+  const woLifts = () => PS.SESSIONS[wo.type].lifts.concat(wo.w && wo.w.benchL != null ? ['benchL'] : []);
+  const wStep = (k) => PS.stepOf(state, k);
   const stepWeight = (st) => (st.kind === 'warm' ? st.w : wo.w[st.k]);
   const sideKg = (ps) => PS.BAR + 2 * PS.sum(ps);
   /* Plates per side for step i: the planned stack when the weight is as planned,
@@ -4855,6 +4940,7 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
   function restFor(st) {
     const r = state.settings.rest;
     if (st.kind === 'warm') return r.warm;
+    if (st.k === 'benchL') return Math.min(r.work, 120); // lighter sets, shorter rest
     return st.k === 'pull' ? r.pull : r.work;
   }
   function workIdx(k) {
@@ -4870,8 +4956,8 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
 
   /* Loading the bar: plates per side for the next set, what to add or take off,
      and a small picture of one sleeve (heaviest plate nearest the middle). */
-  const PLATE_H = { 25: 46, 20: 46, 15: 40, 10: 34, 5: 26, 2.5: 20, 1.25: 15 };
-  const PLATE_W = { 25: 12, 20: 11, 15: 10, 10: 9, 5: 7, 2.5: 6, 1.25: 5 };
+  const PLATE_H = { 25: 46, 20: 46, 15: 40, 10: 34, 5: 26, 2.5: 20, 1.25: 15, 0.5: 12 };
+  const PLATE_W = { 25: 12, 20: 11, 15: 10, 10: 9, 5: 7, 2.5: 6, 1.25: 5, 0.5: 4 };
   // heaviest first in words; the picture keeps the order they sit on the bar
   const platesTxt = (ps) => ps.slice().sort((a, b) => b - a).map(PS.kg).join(' + ');
   function barSVG(plates, keepN) {
@@ -4922,9 +5008,16 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
       if (reps.length) lifts[k] = { w: wo.w[k], reps, effort: wo.effort[k] || 'clean', planned: idx.length };
     });
     const preps = workIdx('pull').filter((i) => wo.done[i] != null).map((i) => wo.done[i]);
+    let light = null;
+    if (wo.w && wo.w.benchL != null) {
+      const idx = workIdx('benchL');
+      const reps = idx.filter((i) => wo.done[i] != null).map((i) => wo.done[i]);
+      if (reps.length && PS.sum(reps) > 0) light = { w: wo.w.benchL, reps, effort: wo.effort.benchL || 'clean', planned: idx.length };
+    }
     return {
       date: PS.iso(new Date(wo.started)),
       lifts,
+      light,
       pull: PS.sum(preps) > 0 ? { reps: preps, add: wo.add || 0 } : null,
       dur: Math.round(((wo.ended || Date.now()) - wo.started) / 1000),
     };
@@ -5065,7 +5158,7 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
     else if (wo.phase === 'rest') main = `Rest ${PS.mmss(Math.max(0, Math.ceil((wo.restEnd - now) / 1000)))}`;
     else {
       const st = wo.steps[wo.i];
-      const nm = st.k === 'pull' ? 'Pull-ups' : PS.LIFTS[st.k].short;
+      const nm = liftShort(st.k);
       const what = `${nm} · ${st.kind === 'warm' ? 'warm-up' : 'set'} ${st.n} of ${st.of}`;
       over = !!wo.restOver;
       main = over ? `Rest over · ${what}` : `Next: ${what}`;
@@ -5247,13 +5340,13 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
   }
 
   function progHTML() {
-    const ks = PS.SESSIONS[wo.type].lifts.concat(['pull']);
+    const ks = woLifts().concat(['pull']);
     const curK = wo.phase === 'done' ? null : wo.steps[wo.i].k;
-    return `<ol class="wo-prog" aria-label="Progress">${ks.map((k) => {
+    return `<ol class="wo-prog${ks.length > 3 ? ' four' : ''}" aria-label="Progress">${ks.map((k) => {
       const idx = workIdx(k);
       const n = idx.filter((i) => wo.done[i] != null).length;
       const cls = k === curK ? 'cur' : n === idx.length ? 'done' : '';
-      return `<li class="${cls}"><span>${esc(k === 'pull' ? 'Pull-ups' : PS.LIFTS[k].short)}</span><b>${n}/${idx.length}</b></li>`;
+      return `<li class="${cls}"><span>${esc(k === 'benchL' ? 'Light' : k === 'pull' && ks.length > 3 ? 'Pull' : liftShort(k))}</span><b>${n}/${idx.length}</b></li>`;
     }).join('')}</ol>`;
   }
 
@@ -5282,9 +5375,9 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
         ? `<p class="wo-goal"><span>Today's goal</span><b>${PS.kg(wo.w[st.k])} kg × ${wo.steps[workIdx(st.k)[0]].reps}</b><span>${work} ${work === 1 ? 'set' : 'sets'}</span></p>`
         : '';
       what = `<div class="wo-wrow">
-          ${adj ? '<button class="wo-adj" type="button" data-wo="w-" aria-label="2.5 kg less">−</button>' : ''}
+          ${adj ? `<button class="wo-adj" type="button" data-wo="w-" aria-label="${PS.kg(wStep(st.k))} kg less">−</button>` : ''}
           <div class="wo-big">${PS.kg(w)}<small>kg</small></div>
-          ${adj ? '<button class="wo-adj" type="button" data-wo="w+" aria-label="2.5 kg more">+</button>' : ''}
+          ${adj ? `<button class="wo-adj" type="button" data-wo="w+" aria-label="${PS.kg(wStep(st.k))} kg more">+</button>` : ''}
         </div>
         <div class="wo-x" aria-label="${st.reps} reps"><span class="x">×</span>${st.reps}<small>reps</small></div>
         ${pt ? `<p class="wo-sub">${pt}</p>` : ''}
@@ -5316,11 +5409,11 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
     const rem = Math.max(0, (wo.restEnd - Date.now()) / 1000);
     const C = 289.03;
     const frac = wo.restTotal ? Math.min(1, rem / wo.restTotal) : 0;
-    const fix = lastSt && lastSt.kind === 'work' ? `<div class="wo-fix"><span>${esc(lastSt.k === 'pull' ? 'Pull-ups' : PS.LIFTS[lastSt.k].short)} set ${lastSt.n}</span>
+    const fix = lastSt && lastSt.kind === 'work' ? `<div class="wo-fix"><span>${esc(liftShort(lastSt.k))} set ${lastSt.n}</span>
         <div class="stepper sm"><button type="button" data-wo="f-" aria-label="One rep fewer">−</button><output class="wo-fixv">${wo.done[wo.last]}</output><button type="button" data-wo="f+" aria-label="One rep more">+</button></div><span>reps</span></div>` : '';
     const lastOfLift = lastSt && lastSt.kind === 'work' && lastSt.k !== 'pull' && workIdx(lastSt.k).slice(-1)[0] === wo.last;
     const cur = lastOfLift ? (wo.effort[lastSt.k] || 'clean') : null;
-    const feel = lastOfLift ? `<div class="wo-feel"><p>How did ${esc(PS.LIFTS[lastSt.k].name.toLowerCase())} feel?</p>
+    const feel = lastOfLift ? `<div class="wo-feel"><p>How did ${esc(liftName(lastSt.k).toLowerCase())} feel?</p>
         <div class="seg" role="radiogroup" aria-label="How did it feel">${Object.keys(EFFORT).map((e) => `<button type="button" role="radio" data-wo="feel" data-v="${e}" aria-checked="${cur === e}">${EFFORT[e].label}</button>`).join('')}</div></div>` : '';
     const load = loadHTML(nx);
     return `<div class="wo-rest${lastOfLift ? ' has-feel' : ''}${load ? ' has-load' : ''}">
@@ -5342,15 +5435,15 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
 
   function finHTML() {
     const m = workoutModel();
-    const lines = PS.SESSIONS[wo.type].lifts.map((k) => {
-      const it = m.lifts[k];
-      if (!it) return `<li><span class="fl-n">${esc(PS.LIFTS[k].name)}</span><span class="fl-v muted">Not done</span></li>`;
-      return `<li><span class="fl-n">${esc(PS.LIFTS[k].name)}</span><span class="fl-v"><b>${PS.kg(it.w)} kg</b> × ${it.reps.join(' · ')}</span><span class="fl-s">${esc(liftWord(k, it))}</span></li>`;
+    const lines = woLifts().map((k) => {
+      const it = k === 'benchL' ? m.light : m.lifts[k];
+      if (!it) return `<li><span class="fl-n">${esc(liftName(k))}</span><span class="fl-v muted">Not done</span></li>`;
+      return `<li><span class="fl-n">${esc(liftName(k))}</span><span class="fl-v"><b>${PS.kg(it.w)} kg</b> × ${it.reps.join(' · ')}</span><span class="fl-s">${esc(liftWord(k, it))}</span></li>`;
     });
     lines.push(m.pull
       ? `<li><span class="fl-n">Pull-ups</span><span class="fl-v"><b>${m.pull.reps.join(' · ')}</b></span><span class="fl-s">${PS.sum(m.pull.reps)} reps${m.pull.add ? ` · +${PS.kg(m.pull.add)} kg` : ''}</span></li>`
       : '<li><span class="fl-n">Pull-ups</span><span class="fl-v muted">Not done</span></li>');
-    const vol = Object.values(m.lifts).reduce((a, it) => a + it.w * PS.sum(it.reps), 0);
+    const vol = Object.values(m.lifts).concat(m.light ? [m.light] : []).reduce((a, it) => a + it.w * PS.sum(it.reps), 0);
     return `<div class="wo-fin">
         <div class="wo-info">
           <p class="wo-lbl">Workout done</p>
@@ -5450,12 +5543,13 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
 
   function saveWorkoutSession() {
     const m = workoutModel();
-    if (!Object.keys(m.lifts).length && !m.pull) {
+    if (!Object.keys(m.lifts).length && !m.pull && !m.light) {
       woMsg = 'Finish at least one set to save, or discard the workout.';
       renderWorkout();
       return;
     }
     const e = { id: uid(), type: wo.type, status: 'done', date: m.date, lifts: m.lifts, pull: m.pull, note: '', dur: m.dur };
+    if (m.light) e.light = m.light;
     if (wo.bonus) { e.bonus = true; bonus = null; }
     state.lifts.push(e);
     save();
@@ -5485,7 +5579,7 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
         return;
       }
       case 'w-': case 'w+': {
-        wo.w[st.k] = Math.max(PS.BAR, PS.roundTo(wo.w[st.k] + (a === 'w+' ? 2.5 : -2.5), 1.25));
+        { const d = wStep(st.k); wo.w[st.k] = Math.max(PS.BAR, PS.roundTo(wo.w[st.k] + (a === 'w+' ? d : -d), d < 2.5 ? 0.5 : 1.25)); }
         saveWorkout(); renderWorkout();
         return;
       }
@@ -5622,6 +5716,14 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
         model.lifts[k] = { w: p.w, reps: Array(p.sets).fill(prefill ? 0 : p.reps), effort: 'clean' };
       }
     });
+    /* Light bench: shown on Deadlift & Press days while it's on, or when this session has one.
+       Starts at 0 reps when logging by hand, so it's only saved if you did it. */
+    const keys = sess.lifts.slice();
+    if ((src && src.light) || (!entry && PS.lightOn(state, type))) {
+      keys.push('benchL');
+      if (src && src.light) model.lifts.benchL = JSON.parse(JSON.stringify(src.light));
+      else { const lp = PS.lightPlan(state); model.lifts.benchL = { w: lp.w, reps: Array(lp.sets).fill(0), effort: 'clean' }; }
+    }
     const pp = PS.pullPlan(state);
     if (src) model.pull = src.pull && src.pull.reps ? JSON.parse(JSON.stringify(src.pull)) : { reps: [0, 0, 0], add: 0 };
     else model.pull = { reps: pp.reps.slice(0, 3), add: pp.add };
@@ -5629,7 +5731,7 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
     let showAdd = model.pull.add > 0 || (pp.last && pp.last.reps[0] >= 10);
 
     const liftBlock = (k) => {
-      const L = PS.LIFTS[k];
+      const L = LDEF(k);
       const it = model.lifts[k];
       return `<div class="block" data-lift="${k}">
           <div class="block-head"><h3>${L.name}</h3>
@@ -5642,7 +5744,7 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
           <div class="seg" role="radiogroup" aria-label="How did ${L.name.toLowerCase()} feel?">
             ${Object.keys(EFFORT).map((key) => `<button type="button" role="radio" data-effort="${key}" aria-checked="${it.effort === key}">${EFFORT[key].label}</button>`).join('')}
           </div>
-          <p class="effort-desc">${PS.sum(it.reps) === 0 ? 'Not done. Leave every set at 0 to leave it out.' : effortDesc(k, it)}</p>
+          <p class="effort-desc">${PS.sum(it.reps) === 0 ? (k === 'benchL' ? 'Not done. Tap each set to fill in your reps (up to 8).' : 'Not done. Leave every set at 0 to leave it out.') : effortDesc(k, it)}</p>
           ${isNew ? '<div class="next-prev"></div>' : ''}
         </div>`;
     };
@@ -5658,7 +5760,7 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
     const body = () => `
       <div class="field inline"><label class="lbl" for="logDate">Date</label><input class="inp" type="date" id="logDate" value="${model.date}" max="${t}"></div>
       ${prefill && prefill.dur ? `<p class="small muted">Workout time ${fmtDur(prefill.dur * 1000)}</p>` : ''}
-      ${sess.lifts.map(liftBlock).join('')}
+      ${keys.map(liftBlock).join('')}
       ${pullBlock()}
       <div class="field"><label class="lbl" for="logNote">Note</label><input class="inp" id="logNote" maxlength="160" placeholder="Optional" value="${esc(model.note)}"></div>
       ${entry ? '<button class="btn danger" type="button" data-del>Delete this session</button>' : ''}`;
@@ -5674,14 +5776,14 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
 
     function updatePreview(el) {
       if (!isNew) return;
-      sess.lifts.forEach((k) => {
+      keys.forEach((k) => {
         const box = $(`[data-lift="${k}"] .next-prev`, el);
         if (!box) return;
         const it = model.lifts[k];
         if (!(it.w > 0) || PS.sum(it.reps) === 0) { box.innerHTML = ''; return; }
-        const extra = { date: model.date, type, status: 'done', lifts: { [k]: it } };
-        const p = PS.liftPlan(state, k, null, extra);
-        box.innerHTML = `<span>Next time</span><span><b>${PS.kg(p.w)} kg</b>${p.sets !== PS.LIFTS[k].sets ? ` · ${p.sets} set` : ''} · ${esc(p.tag.toLowerCase())}</span>`;
+        const extra = k === 'benchL' ? { date: model.date, type, status: 'done', light: it } : { date: model.date, type, status: 'done', lifts: { [k]: it } };
+        const p = k === 'benchL' ? PS.lightPlan(state, extra) : PS.liftPlan(state, k, null, extra);
+        box.innerHTML = `<span>Next time</span><span><b>${PS.kg(p.w)} kg</b>${p.sets !== LDEF(k).sets ? ` · ${p.sets} set` : ''} · ${esc(p.tag.toLowerCase())}</span>`;
       });
     }
 
@@ -5706,10 +5808,11 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
         if (!b) return;
         const lb = b.closest('[data-lift]');
         if (lb) {
-          const k = lb.dataset.lift, it = model.lifts[k], L = PS.LIFTS[k];
+          const k = lb.dataset.lift, it = model.lifts[k], L = LDEF(k);
           if (b.dataset.w) {
             const cur = num($(`#w-${k}`, el).value);
-            it.w = Math.max(0, PS.roundTo((isFinite(cur) ? cur : it.w) + Number(b.dataset.w) * 2.5, 1.25));
+            const d = wStep(k);
+            it.w = Math.max(0, PS.roundTo((isFinite(cur) ? cur : it.w) + Number(b.dataset.w) * d, d < 2.5 ? 0.5 : 1.25));
             $(`#w-${k}`, el).value = PS.kg(it.w);
             updatePreview(el);
           } else if (b.dataset.set != null) {
@@ -5765,12 +5868,18 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
         if (!(it.w >= PS.BAR)) { const i = $(`#w-${k}`, el); i.focus(); toast(`Enter the ${PS.LIFTS[k].name.toLowerCase()} weight (20 kg or more).`); return; }
         lifts[k] = it;
       }
+      let light = null;
+      if (model.lifts.benchL && PS.sum(model.lifts.benchL.reps) > 0) {
+        if (!(model.lifts.benchL.w >= PS.BAR)) { const i = $('#w-benchL', el); i.focus(); toast('Enter the light bench weight (20 kg or more).'); return; }
+        light = model.lifts.benchL;
+      }
       const pull = PS.sum(model.pull.reps) > 0 ? { reps: model.pull.reps.slice(), add: model.pull.add || 0 } : null;
-      if (!Object.keys(lifts).length && !pull) { toast('Add reps to at least one exercise before saving.'); return; }
+      if (!Object.keys(lifts).length && !pull && !light) { toast('Add reps to at least one exercise before saving.'); return; }
       const e = entry || { id: uid(), type, status: 'done' };
       e.status = 'done';
       e.date = model.date || t;
       e.lifts = lifts;
+      if (light) e.light = light; else delete e.light;
       e.pull = pull;
       e.note = (model.note || '').trim();
       if (prefill && prefill.dur) e.dur = prefill.dur;
@@ -6005,7 +6114,9 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
       <div class="field you"><span class="lbl">You</span><p class="muted small">Used only to compare you with the strength, swim and running standards. Nothing is tracked over time.</p></div>
       <div class="rest-row"><span>Body weight</span><div class="stepper"><button type="button" data-bw="-1" aria-label="Half a kilo less">−</button><input id="bwIn" inputmode="decimal" autocomplete="off" value="${PS.kg(s.bodyWeight)}" aria-label="Body weight in kilograms"><span class="unit">kg</span><button type="button" data-bw="1" aria-label="Half a kilo more">+</button></div></div>
       <div class="rest-row"><span>Age <span class="muted small">for swim levels</span></span><div class="stepper"><button type="button" data-ag="-1" aria-label="One year less">−</button><input id="agIn" inputmode="numeric" autocomplete="off" value="${s.age || ''}" placeholder="Add" aria-label="Age in years"><span class="unit">yrs</span><button type="button" data-ag="1" aria-label="One year more">+</button></div></div>
-      <div class="field"><span class="lbl" id="ldL">Lift days</span><div class="chips days" role="group" aria-labelledby="ldL">${chips('ld', s.liftDays)}</div><p class="muted small">Two days. Tap a day to move the nearer one there. The first in the week is Squat & Bench, the second Deadlift & Press.</p></div>
+      <div class="field"><span class="lbl" id="ldL">Lift days</span><div class="chips days" role="group" aria-labelledby="ldL">${chips('ld', s.liftDays)}</div><p class="muted small">Two days. Tap a day to move the nearer one there. The first in the week is Squat & Bench, the second Deadlift & Press.</p>
+        <div class="rest-row"><span>Light bench on Deadlift & Press day <span class="muted small">3 × 8 after press</span></span><button class="chip" type="button" data-lightb aria-pressed="${!!s.lightBench}">${s.lightBench ? 'On' : 'Off'}</button></div>
+        <div class="rest-row"><span>0.5 kg plates <span class="muted small">bench and press go up 1 kg</span></span><button class="chip" type="button" data-frac aria-pressed="${!!s.frac}">${s.frac ? 'On' : 'Off'}</button></div></div>
       <div class="field"><span class="lbl" id="mdL">Morning run + bag</span><div class="chips days" role="group" aria-labelledby="mdL">${chips('md', s.morningDays)}</div></div>
       <div class="field"><span class="lbl" id="swL">Swim day</span><div class="chips days" role="group" aria-labelledby="swL">${chips('sd', [s.swimDay])}</div>
         <div class="rest-row"><span>Learning front crawl</span><button class="chip" type="button" data-crawl aria-pressed="${!!s.crawl}">${s.crawl ? 'On' : 'Off'}</button></div></div>
@@ -6097,6 +6208,12 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
             s.rest[k] = Math.max(lo, Math.min(hi, s.rest[k] + Number(b.dataset.d)));
             save();
             $(`#rest-${k}`, el).textContent = restTxt(s.rest[k]);
+          } else if (b.hasAttribute('data-lightb')) {
+            s.lightBench = !s.lightBench; save(); refresh();
+            const nb = $('[data-lightb]', el); if (nb) nb.focus({ preventScroll: true });
+          } else if (b.hasAttribute('data-frac')) {
+            s.frac = !s.frac; PS.setFrac(s.frac); save(); refresh();
+            const nb = $('[data-frac]', el); if (nb) nb.focus({ preventScroll: true });
           } else if (b.hasAttribute('data-crawl')) {
             s.crawl = !s.crawl; save(); refresh();
             const nb = $('[data-crawl]', el); if (nb) nb.focus({ preventScroll: true });
