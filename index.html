@@ -282,6 +282,8 @@ p { margin: 0; }
 .c-label { fill: var(--ink); font: 700 11px var(--body); paint-order: stroke; stroke: var(--surface); stroke-width: 3px; stroke-linejoin: round; }
 .c-label.dim { fill: var(--ink-2); font-weight: 600; }
 .c-axis.big { font-size: 12px; }
+.c-mark { fill: var(--ink-2); font: 600 9.5px var(--body); font-variant-numeric: tabular-nums; paint-order: stroke; stroke: var(--surface); stroke-width: 3px; stroke-linejoin: round; }
+.c-mark.big { font-size: 11px; }
 .c-label.big { font-size: 14px; }
 .c-ref-label.big { font-size: 12px; }
 .c-dot.sel { fill: var(--ink); stroke: var(--surface); stroke-width: 3; }
@@ -310,6 +312,7 @@ p { margin: 0; }
 .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 10px; font-size: 12px; color: var(--ink-3); }
 .legend span { display: inline-flex; align-items: center; gap: 6px; }
 .legend svg { overflow: visible; }
+.legend .lg-mark { flex: none; font-weight: 600; color: var(--ink-2); font-variant-numeric: tabular-nums; }
 
 /* ---------- lists ---------- */
 .list { display: flex; flex-direction: column; border-top: 1px solid var(--line); }
@@ -1880,12 +1883,26 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
     });
     return best;
   }
-  /* Most pull-ups in one set. */
+  /* A weighted set as reps at body weight, so adding weight is not read as going backwards.
+     Epley: the max is (body + extra) × (1 + reps/30), then the same max at body weight alone.
+     With no extra weight it is just the reps. 8 reps at +2.5 kg and 72 kg is about 9.3. */
+  function pullEq(bw, reps, add) {
+    if (!(add > 0) || !(reps > 0)) return reps || 0;
+    const b = bw > 0 ? bw : 72;
+    return 30 * (((b + add) * (1 + reps / 30)) / b - 1);
+  }
+  /* The best set of a session: its reps, and the same set as body-weight reps. */
+  function pullBest(e, bw) {
+    const reps = Math.max(0, ...e.pull.reps), add = e.pull.add || 0;
+    return { reps, add, eq: pullEq(bw, reps, add) };
+  }
+  /* Best set, counted as body-weight reps. */
   function bestPull(state) {
     let best = null;
+    const bw = state.settings.bodyWeight;
     pullHistory(state).forEach((e) => {
-      const r = Math.max(...e.pull.reps);
-      if (!best || r > best.reps) best = { reps: r, date: e.date };
+      const p = pullBest(e, bw);
+      if (!best || p.eq > best.eq + 1e-9) best = Object.assign(p, { date: e.date });
     });
     return best;
   }
@@ -2048,7 +2065,7 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
     isLiftDay, slotType, nextLift, liftNotes, nextWeekly, liftDayTip,
     SWIM_GOALS, DRILLS, swimPace, swimsDone, swimPlan, swimProgress,
     CRAWL_STEPS, crawlSetTxt, crawlLog, crawlNext, crawlPlan,
-    LEVELS, LEVEL_PCT, REP_PCT, BREAST_FACTOR, strengthStandards, swimStandards, runStandards, est1RM, bestMax, bestPull, levelOf,
+    LEVELS, LEVEL_PCT, REP_PCT, BREAST_FACTOR, strengthStandards, swimStandards, runStandards, est1RM, bestMax, bestPull, pullEq, pullBest, levelOf,
     isMorningDay, morningWeekStart, morningDue, morningRuns, runPace, morningStats, morningMonths, morningWeekdays, morningGrid,
     ballStats, GAME_ISSUES, gamePatterns, WEEK_KINDS, weekView, weekList, seed,
   };
@@ -3129,12 +3146,13 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
         </button>`;
     });
     const ph = PS.pullHistory(state);
-    const best = ph.map((e) => Math.max(0, ...e.pull.reps));
+    const best = ph.map((e) => PS.pullBest(e, state.settings.bodyWeight).eq);
     const lastP = ph[ph.length - 1];
-    const dP = best.length ? best[best.length - 1] - best[0] : 0;
-    out.push(`<button class="tile wide" type="button" data-act="chart" data-key="pull" aria-label="Pull-ups${lastP ? `, last ${lastP.pull.reps.join(', ')}` : ''}. Opens the chart.">
+    const lastAdd = lastP && lastP.pull.add ? ` +${PS.kg(lastP.pull.add)}` : '';
+    const dP = best.length ? Math.round(best[best.length - 1]) - Math.round(best[0]) : 0;
+    out.push(`<button class="tile wide" type="button" data-act="chart" data-key="pull" aria-label="Pull-ups${lastP ? `, last ${lastP.pull.reps.join(', ')}${lastAdd ? ` with${lastAdd} kg` : ''}` : ''}. Opens the chart.">
         <span class="t-open" aria-hidden="true">${ICON.expand}</span>
-        <span class="t-txt"><span class="t-name">Pull-ups</span><span class="t-val">${lastP ? lastP.pull.reps.join(' · ') : '–'}</span><span class="t-delta">${best.length ? `Best set ${dP >= 0 ? '+' : '−'}${Math.abs(dP)} since ${PS.shortDate(ph[0].date)}` : 'Not logged yet'}</span></span>
+        <span class="t-txt"><span class="t-name">Pull-ups</span><span class="t-val">${lastP ? `${lastP.pull.reps.join(' · ')}${lastAdd ? `<small>${lastAdd} kg</small>` : ''}` : '–'}</span><span class="t-delta">${best.length ? `Best set ${dP >= 0 ? '+' : '−'}${Math.abs(dP)} since ${PS.shortDate(ph[0].date)}` : 'Not logged yet'}</span></span>
         ${sparkHTML(best)}
       </button>`);
     return `<div class="tiles">${out.join('')}</div>`;
@@ -3146,7 +3164,7 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
   function legendFor(s) {
     const bw = PS.kg(state.settings.bodyWeight);
     if (s.kind === 'lift') return `<div class="legend v-legend">${LEGEND}${bandKey(`Levels at ${bw} kg, as sets of 5`)}</div>`;
-    if (s.kind === 'pull') return `<div class="legend v-legend">${bandKey(`Levels at ${bw} kg, best set`)}</div>`;
+    if (s.kind === 'pull') return `<div class="legend v-legend">${bandKey(`Levels at ${bw} kg, best set`)}${s.points.some((p) => p.b.add) ? '<span><b class="lg-mark">+2.5</b>Extra kg from here. Weighted sets count as the reps they are worth at body weight</span>' : ''}</div>`;
     if (s.bands) return `<div class="legend v-legend">${bandKey(`Levels for ${ageTxt()}`)}</div>`;
     if (s.kind === 'crawl') return '<div class="legend v-legend"><span><svg width="10" height="10" viewBox="0 0 10 10"><circle cx="5" cy="5" r="4" fill="currentColor"/></svg>Finished, felt OK or easy</span><span><svg width="10" height="10" viewBox="0 0 10 10"><circle cx="5" cy="5" r="3.6" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>Hard or had to stop</span></div>';
     return '';
@@ -3229,16 +3247,23 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
     };
   }
 
-  /* Pull-ups plot the best set of each session, since that is what the levels grade. */
+  /* Pull-ups plot the best set of each session, since that is what the levels grade.
+     A set with extra weight is plotted as the reps it is worth at body weight. */
+  const pullTxt = (b) => (b.add ? `≈${Math.round(b.eq)}` : String(b.reps));
   function pullSeries() {
     const ph = PS.pullHistory(state);
-    const points = ph.map((e) => {
-      const best = Math.max(0, ...e.pull.reps);
-      return { x: e.date, y: best, e,
-        tip: `<b>${best} reps</b>best set · ${e.pull.reps.join(' · ')}${e.pull.add ? ` · +${PS.kg(e.pull.add)} kg` : ''} · ${PS.dayDate(e.date)}` };
+    let lastAdd = 0;
+    const points = ph.map((e, i) => {
+      const b = PS.pullBest(e, state.settings.bodyWeight);
+      const mark = b.add !== lastAdd || (i === 0 && b.add) ? (b.add ? `+${PS.kg(b.add)}` : 'BW') : '';
+      lastAdd = b.add;
+      return { x: e.date, y: b.eq, e, b, mark,
+        tip: b.add
+          ? `<b>${b.reps} reps at +${PS.kg(b.add)} kg</b>worth about ${Math.round(b.eq)} at body weight · ${e.pull.reps.join(' · ')} · ${PS.dayDate(e.date)}`
+          : `<b>${b.reps} reps</b>best set · ${e.pull.reps.join(' · ')} · ${PS.dayDate(e.date)}` };
     });
-    return { key: 'pull', kind: 'pull', title: 'Pull-ups', points, forecast: null, bands: chartBands('pull'), fmt: String, label: String, unit: 'reps', ticks: 'int',
-      empty: 'Log a session to start the line.', aria: 'Pull-ups, best set per session' };
+    return { key: 'pull', kind: 'pull', title: 'Pull-ups', points, forecast: null, bands: chartBands('pull'), fmt: String, label: (v) => String(Math.round(v)), unit: 'reps', ticks: 'int',
+      empty: 'Log a session to start the line.', aria: 'Pull-ups, best set per session as reps at body weight' };
   }
 
   /* Level bands in the chart's own units: 5-rep working weight for a lift,
@@ -3459,6 +3484,15 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
         d += `<circle class="c-fc-dot${sel === -1 ? ' sel' : ''}" cx="${f1(fx)}" cy="${f1(fy)}" r="${big ? (sel === -1 ? 7.5 : 6) : 5}"/>`;
         hits.push({ cx: fx, cy: fy, i: -1, html: fc.tip });
       }
+      // small notes under a point, such as where extra weight on pull-ups changed
+      P.forEach((q, i) => {
+        const tx = pts[i].mark;
+        if (!tx) return;
+        const fs = big ? 11 : 9.5;
+        const y = q[1] + fs + 8 < H - pb - 2 ? q[1] + fs + 8 : q[1] - 10;
+        d += `<text class="c-mark${big ? ' big' : ''}" x="${f1(q[0])}" y="${f1(y)}" text-anchor="middle">${esc(tx)}</text>`;
+        markText(q[0], y, tx, fs, 'middle');
+      });
       P.forEach((q, i) => {
         const on = sel === i;
         const r = big ? (on ? 7.5 : 5.5) : 4.5;
@@ -3582,7 +3616,8 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
       return `${plural(n, 'session')} · Best ${PS.kg(best)} kg · ${nextLevelTxt(s.key)}`;
     }
     if (s.kind === 'pull') {
-      return `${plural(n, 'session')} · Best set ${Math.max(...s.points.map((p) => p.y))} · ${nextLevelTxt('pull')}`;
+      const top = s.points.reduce((a, p) => (p.y > a.y + 1e-9 ? p : a));
+      return `${plural(n, 'session')} · Best set ${pullTxt(top.b)} · ${nextLevelTxt('pull')}`;
     }
     if (s.kind === 'crawl') return `${plural(n, 'crawl set')} · Longest ${Math.max(...s.points.map((p) => p.y))} m without stopping`;
     if (s.kind === 'run') {
@@ -3614,7 +3649,7 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
       for (let i = s.points.length - 1; i >= 0; i--) {
         const p = s.points[i], prev = s.points[i - 1];
         const add = p.e.pull.add ? ` +${PS.kg(p.e.pull.add)}kg` : '';
-        rows.push(`<tr data-i="${i}" tabindex="-1"><td>${dotCell(p)}${PS.dayDate(p.x)}</td><td class="n">${p.e.pull.reps.join('·')}${add}</td><td class="n">${p.y}</td><td class="n">${prev ? changeTxt(p.y - prev.y) : 'Start'}</td></tr>`);
+        rows.push(`<tr data-i="${i}" tabindex="-1"><td>${dotCell(p)}${PS.dayDate(p.x)}</td><td class="n">${p.e.pull.reps.join('·')}${add}</td><td class="n">${pullTxt(p.b)}</td><td class="n">${!prev ? 'Start' : p.b.add !== prev.b.add ? `${changeTxt(p.b.add - prev.b.add)} kg` : changeTxt(Math.round(p.y) - Math.round(prev.y))}</td></tr>`);
       }
     } else if (s.kind === 'crawl') {
       head = ['Date', 'Set', 'Done', 'Longest'];
@@ -3658,10 +3693,13 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
         ${p.e.note ? `<p class="r-note">${esc(p.e.note)}</p>` : ''}`;
     }
     if (s.kind === 'pull') {
-      const d = prev ? p.y - prev.y : 0;
-      const ch = prev ? (d === 0 ? 'Same best set' : `${changeTxt(d)} ${Math.abs(d) === 1 ? 'rep' : 'reps'}`) : 'First session';
+      const d = prev ? Math.round(p.y) - Math.round(prev.y) : 0;
+      const b = p.b, da = prev ? b.add - prev.b.add : 0;
+      const ch = !prev ? 'First session'
+        : da ? `${changeTxt(da)} kg extra`
+        : d === 0 ? 'Same best set' : `${changeTxt(d)} ${Math.abs(d) === 1 ? 'rep' : 'reps'}`;
       return `<div class="r-top"><span class="r-date">${PS.dayDate(p.x)}</span><span class="r-chip">${ch}</span><button class="link r-edit" type="button" data-vedit="lift|${esc(p.e.id)}">Edit</button></div>
-        <div class="r-main"><span class="r-val">${p.y}<small>reps, best set</small></span><span class="r-sub">${p.e.pull.reps.join(' · ')} · ${PS.sum(p.e.pull.reps)} in total${p.e.pull.add ? ` · +${PS.kg(p.e.pull.add)} kg` : ''}</span></div>`;
+        <div class="r-main"><span class="r-val">${b.add ? `${b.reps}<small>reps at +${PS.kg(b.add)} kg</small>` : `${b.reps}<small>reps, best set</small>`}</span><span class="r-sub">${b.add ? `Worth about ${Math.round(b.eq)} at body weight · ` : ''}${p.e.pull.reps.join(' · ')} · ${PS.sum(p.e.pull.reps)} in total</span></div>`;
     }
     if (s.kind === 'crawl') {
       const c = p.e.crawl;
@@ -4164,7 +4202,7 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
   function liftLevel(k) {
     const std = PS.strengthStandards(k, state.settings.bodyWeight);
     const best = k === 'pull' ? PS.bestPull(state) : PS.bestMax(state, k);
-    const v = best ? (k === 'pull' ? best.reps : best.max) : null;
+    const v = best ? (k === 'pull' ? best.eq : best.max) : null;
     return { k, name: k === 'pull' ? 'Pull-ups' : PS.LIFTS[k].name, std, best, v, lv: v == null ? { idx: -1, pos: 0 } : PS.levelOf(v, std, false) };
   }
 
@@ -4214,7 +4252,7 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
   function liftSub(r) {
     if (r.v == null) return 'Log a session to see your level';
     const nx = r.lv.idx + 1;
-    if (r.k === 'pull') return `<span>Best set <b>${r.v} reps</b> · ${nx <= 4 ? `${LV[nx]} at ${r.std[nx]}` : 'Top level'}</span>`;
+    if (r.k === 'pull') return `<span>Best set <b>${pullTxt(r.best)} reps</b> ·${nx <= 4 ? `${LV[nx]} at ${r.std[nx]}` : 'Top level'}</span>`;
     return `<span>Est. max <b>${kgR(r.v)} kg</b> · ${nx <= 4 ? `${LV[nx]} at ${kgR(r.std[nx])} kg` : 'Top level'}</span>`;
   }
 
@@ -4303,15 +4341,19 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
       how = `Times are from Swimming Level for ${ageTxt()}. They aren't split by stroke, and distance swimmers mostly swim freestyle, so the app adds ${Math.round((PS.BREAST_FACTOR - 1) * 100)}% for breaststroke. That is the gap between the men's freestyle and breaststroke world records at 100 m and 200 m. Set your age in Settings to compare with your own age group.`;
     } else if (k === 'pull') {
       who = idx < 0 ? 'Below the Beginner standard.' : `Better than ${PS.LEVEL_PCT[idx]}% of lifters around ${bw} kg body weight.`;
-      best = has ? `Your best set is <b>${r.v} reps</b>, on ${PS.dayDate(r.best.date)}.` : 'Log a session with pull-ups to see your level.';
-      next = nx <= 4 ? `<b>${LV[nx]}</b> at ${r.std[nx]} reps in one set.${has ? ` That is ${r.std[nx] - r.v} more than your best.` : ''}` : 'You are at the top level.';
+      const rb = r.best;
+      best = !has ? 'Log a session with pull-ups to see your level.'
+        : rb.add ? `Your best set is <b>${rb.reps} reps with +${PS.kg(rb.add)} kg</b> on ${PS.dayDate(rb.date)}. That is worth about ${Math.round(rb.eq)} reps at body weight.`
+        : `Your best set is <b>${rb.reps} reps</b>, on ${PS.dayDate(rb.date)}.`;
+      const toGo = has ? Math.max(1, Math.ceil(r.std[nx] - r.v - 1e-9)) : 0;
+      next = nx <= 4 ? `<b>${LV[nx]}</b> at ${r.std[nx]} reps in one set.${has ? ` That is ${toGo} more than your best.` : ''}` : 'You are at the top level.';
       head = ['Level', 'Reps', 'Better than'];
       r.std.forEach((v, i) => rows.push(`<tr><td>${LV[i]}</td><td class="n">${v}</td><td class="n">${PS.LEVEL_PCT[i]}%</td></tr>`));
       if (has) {
         const pos = r.std.findIndex((v) => v > r.v);
-        rows.splice(pos < 0 ? rows.length : pos, 0, youRow(`<td class="n">${r.v}</td><td class="n"></td>`));
+        rows.splice(pos < 0 ? rows.length : pos, 0, youRow(`<td class="n">${pullTxt(rb)}</td><td class="n"></td>`));
       }
-      how = `Standards are from Strength Level for men around ${bw} kg. They count reps in one set, so the app uses your best single set.`;
+      how = `Standards are from Strength Level for men around ${bw} kg. They count reps in one set, so the app uses your best single set. A set with extra weight counts as the reps it is worth at body weight, worked out with the Epley formula: 2.5 kg more is worth a little over one rep.`;
     } else {
       const L = PS.LIFTS[k];
       who = idx < 0 ? `Below the Beginner standard at ${bw} kg body weight.` : `Stronger than ${PS.LEVEL_PCT[idx]}% of lifters at ${bw} kg body weight.`;
