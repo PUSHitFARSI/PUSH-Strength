@@ -429,6 +429,7 @@ input[type="date"].inp { min-height: 46px; -webkit-appearance: none; appearance:
 .stepper .unit { font-size: 13px; color: var(--ink-3); margin: 0 4px 0 -6px; }
 .stepper.sm button { width: 36px; height: 40px; font-size: 20px; }
 .stepper.sm output { min-width: 26px; text-align: center; font-weight: 800; font-size: 17px; }
+.stepper.pl output { min-width: 4.6em; }
 .sets { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 .set {
   width: 50px; height: 50px; border-radius: 14px; background: var(--ink); color: var(--bg);
@@ -1145,12 +1146,26 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
 
   /* ---------- the program ---------- */
   const BAR = 20;
-  const PLATES_STD = [25, 20, 15, 10, 5, 2.5, 1.25];
-  let PLATES = PLATES_STD;
-  /* Fractional plates (0.5 kg a side) let bench and overhead press go up 1 kg at a time. */
+  const PLATES_STD = [25, 20, 15, 10, 5, 2.5, 1.25, 1, 0.5];
+  /* The plates you own, as pairs of each size (one plate of a pair goes on each side). */
+  const PLATES_OWN = { 25: 0, 20: 1, 15: 1, 10: 2, 5: 2, 2.5: 1, 1.25: 1, 1: 0, 0.5: 0 };
+  let INV = [];
+  const plateMemo = new Map();
+  let SMALL_OK = false;
+  /* The heaviest weight your plates make. */
+  const maxLoad = () => BAR + 2 * INV.reduce((a, [p, n]) => a + p * n, 0);
+  const setPlates = (own) => {
+    INV = PLATES_STD.map((p) => [p, own && own[p] != null ? own[p] : PLATES_OWN[p]]).filter((x) => x[1] > 0);
+    plateMemo.clear();
+    // 1 kg steps need 0.5, 1, 1.5 and 2 kg a side from the small plates
+    SMALL_OK = [0.5, 1, 1.5, 2].every((r) => platesPerSide(BAR + 2 * r) != null);
+  };
+  /* 1 kg steps on bench and overhead press, when switched on and the small plates make them. */
   const FRAC_LIFTS = ['bench', 'ohp', 'benchL'];
-  const setFrac = (on) => { PLATES = on ? PLATES_STD.concat([0.5]) : PLATES_STD; };
-  const fracOn = (state) => !!(state && state.settings && state.settings.frac);
+  const setFrac = () => {};
+  const smallOK = () => SMALL_OK;
+  setPlates(PLATES_OWN);
+  const fracOn = (state) => !!(state && state.settings && state.settings.frac) && SMALL_OK;
   const stepOf = (state, key) => (fracOn(state) && FRAC_LIFTS.includes(key) ? 1 : (key === 'benchL' ? 2.5 : LIFTS[key].inc));
   const LIFTS = {
     squat: { key: 'squat', name: 'Squat', short: 'Squat', inc: 5, sets: 3, reps: 5, session: 'A' },
@@ -1167,14 +1182,29 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
     B: { name: 'Deadlift & Press', lifts: ['deadlift', 'ohp'] },
   };
 
-  function platesPerSide(w) {
-    let side = (w - BAR) / 2;
+  /* The fewest plates a side that make weight w from the plates you own, heaviest first,
+     or null if they can't. `used` is plates already on that side, which aren't free. */
+  function platesPerSide(w, used) {
+    const side = Math.round(((w - BAR) / 2) * 100) / 100;
     if (side <= 0.001) return [];
-    const out = [];
-    for (const p of PLATES) {
-      while (side >= p - 1e-9) { out.push(p); side -= p; }
-    }
-    return side > 0.01 ? null : out;
+    const key = side + '|' + (used && used.length ? used.join(',') : '');
+    if (plateMemo.has(key)) { const m = plateMemo.get(key); return m && m.slice(); }
+    const left = INV.map(([p, n]) => [p, n - (used ? used.filter((u) => u === p).length : 0)]);
+    let best = null;
+    const pick = [];
+    const go = (i, rest) => {
+      if (rest < 0.005) { if (!best || pick.length < best.length) best = pick.slice(); return; }
+      if (i === left.length || (best && pick.length + 1 >= best.length)) return;
+      const [p, n] = left[i];
+      for (let c = Math.min(n, Math.floor(rest / p + 1e-9)); c >= 0; c--) {
+        for (let k = 0; k < c; k++) pick.push(p);
+        go(i + 1, Math.round((rest - c * p) * 100) / 100);
+        pick.length -= c;
+      }
+    };
+    go(0, side);
+    plateMemo.set(key, best);
+    return best && best.slice();
   }
 
   /* Warm-ups. The empty bar, then up to four sets at about 45, 65, 80 and 90% of the working
@@ -1225,7 +1255,7 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
   function warmupPlan(key, w) {
     // A 1 kg step (63.5 kg, say): warm up as for the 2.5 kg weight just below it, then add the small plates
     const base = Math.floor(w / 2.5 + 1e-9) * 2.5;
-    if (w - base > 1e-9 && base > BAR && platesPerSide(w) != null) {
+    if (w - base > 1e-9 && base > BAR) {
       const p = warmupPlan(key, base);
       return { steps: p.steps, work: loadFrom(p.steps[p.steps.length - 1][2], w) };
     }
@@ -1234,7 +1264,7 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
     if (platesPerSide(w) == null) {
       // a weight the plates can't make: the warm-ups still load, the working sets don't
       const c = loadChain(ideal);
-      return { steps: [first].concat(ideal.map((x, i) => [x, warmReps(x / w), c.lays[i] || []])), work: null };
+      return { steps: [first].concat(ideal.map((x, i) => [x, warmReps(x / w), c.lays[i] || null])), work: null };
     }
     const { floor, maxGap, minGap } = warmLimits(key, w);
     // every way of moving each set by -2.5, 0 or +2.5 kg that still follows the rules
@@ -1253,7 +1283,7 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
     for (const seq of seqs) {
       const c = loadChain(seq.concat([w]));
       const dev = seq.reduce((a, x, i) => a + ((x - ideal[i]) / w) ** 2, 0);
-      const cost = 3 * dev + 0.002 * c.removed + 0.001 * c.extra;
+      const cost = 3 * dev + 0.002 * c.removed + 0.001 * c.extra + (c.lays.some((l) => l == null) ? 10 : 0);
       if (!best || cost < best.cost - 1e-12) best = { cost, seq, c };
     }
     const steps = [first].concat(best.seq.map((x, i) => [x, warmReps(x / w), best.c.lays[i]]));
@@ -1276,7 +1306,7 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
     for (let k = 0; k <= cur.length; k++) {
       if (k > 0) acc += cur[k - 1];
       if (acc > side + 1e-9) break;
-      const rest = platesPerSide(BAR + 2 * (side - acc));
+      const rest = platesPerSide(BAR + 2 * (side - acc), cur.slice(0, k));
       if (rest == null || k + rest.length > cap) continue;
       const cost = (cur.length - k) + rest.length;
       if (cost < bestCost || (cost === bestCost && k > 0)) { bestCost = cost; best = cur.slice(0, k).concat(rest); }
@@ -2060,7 +2090,7 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
   root.PS = {
     iso, parse, addDays, dow, diff, today, byDate, weekStart, shortDate, dayDate,
     DAY, DAY_LONG, MON, MON_LONG, roundTo, kg, mmss, sum,
-    BAR, LIFTS, LIGHT, START, SESSIONS, setFrac, stepOf, lightHistory, lightPlan, lightOn, platesPerSide, warmups, warmupPlan, loadFrom, isClean, verdict,
+    BAR, LIFTS, LIGHT, START, SESSIONS, setFrac, setPlates, smallOK, PLATES_STD, PLATES_OWN, maxLoad, stepOf, lightHistory, lightPlan, lightOn, platesPerSide, warmups, warmupPlan, loadFrom, isClean, verdict,
     liftHistory, liftPlan, pullHistory, pullPlan,
     isLiftDay, slotType, nextLift, liftNotes, nextWeekly, liftDayTip,
     SWIM_GOALS, DRILLS, swimPace, swimsDone, swimPlan, swimProgress,
@@ -2516,6 +2546,13 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
     if (!(s.settings.bagMins >= 1 && s.settings.bagMins <= 30)) s.settings.bagMins = 5;
     if (typeof s.settings.lightBench !== 'boolean') s.settings.lightBench = true;
     if (typeof s.settings.frac !== 'boolean') s.settings.frac = false;
+    const own = s.settings.plates && typeof s.settings.plates === 'object' ? s.settings.plates : {};
+    s.settings.plates = {};
+    PS.PLATES_STD.forEach((p) => {
+      const n = Number(own[p]);
+      s.settings.plates[p] = Number.isInteger(n) && n >= 0 && n <= 6 ? n : PS.PLATES_OWN[p];
+    });
+    PS.setPlates(s.settings.plates);
     PS.setFrac(s.settings.frac);
     if (!(s.settings.bodyWeight > 0)) s.settings.bodyWeight = 72;
     if (!(s.settings.age > 0)) s.settings.age = null;
@@ -4998,8 +5035,8 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
 
   /* Loading the bar: plates per side for the next set, what to add or take off,
      and a small picture of one sleeve (heaviest plate nearest the middle). */
-  const PLATE_H = { 25: 46, 20: 46, 15: 40, 10: 34, 5: 26, 2.5: 20, 1.25: 15, 0.5: 12 };
-  const PLATE_W = { 25: 12, 20: 11, 15: 10, 10: 9, 5: 7, 2.5: 6, 1.25: 5, 0.5: 4 };
+  const PLATE_H = { 25: 46, 20: 46, 15: 40, 10: 34, 5: 26, 2.5: 20, 1.25: 15, 1: 13, 0.5: 12 };
+  const PLATE_W = { 25: 12, 20: 11, 15: 10, 10: 9, 5: 7, 2.5: 6, 1.25: 5, 1: 4, 0.5: 4 };
   // heaviest first in words; the picture keeps the order they sit on the bar
   const platesTxt = (ps) => ps.slice().sort((a, b) => b - a).map(PS.kg).join(' + ');
   function barSVG(plates, keepN) {
@@ -5032,7 +5069,7 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
       else if (!on.length) change = `Take ${platesTxt(off)} off each side`;
       else change = `Off ${platesTxt(off)}, on ${platesTxt(on)}`;
     }
-    const each = target == null ? 'Check the plates' : target.length ? `${platesTxt(target)} a side` : 'Empty bar';
+    const each = target == null ? (w > PS.maxLoad() + 1e-9 ? `More than your plates make (${PS.kg(PS.maxLoad())} kg)` : 'Your plates can\'t make this weight exactly') :target.length ? `${platesTxt(target)} a side` : 'Empty bar';
     const pic = target && target.length ? barSVG(target, keepN) : '';
     return `<div class="wo-load${pic ? '' : ' no-pic'}" aria-label="Load the bar: ${PS.kg(w)} kg, ${esc(each)}${change ? `. ${esc(change)}` : ''}">
         <div class="wl-top"><span class="wl-lbl">Load the bar</span><span class="wl-kg">${PS.kg(w)}<small>kg</small><span class="wl-x">×${nx.reps}</span></span></div>
@@ -6147,6 +6184,10 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
   /* Settings */
   const REST_LIMITS = { work: [30, 600], pull: [30, 600], warm: [0, 300] };
   const restTxt = (s) => (s > 0 ? PS.mmss(s) : 'Off');
+  const plTxt = (n) => (n ? `${n} ${n === 1 ? 'pair' : 'pairs'}` : 'None');
+  const fracNote = (s) => (PS.smallOK()
+    ? (s.frac ? 'Bench and press go up 1 kg at a time, 2 kg after an easy session.' : 'Your small plates can make 1 kg steps. Switch them on for bench and press.')
+    : `${s.frac ? 'On hold: ' : ''}1 kg steps need 0.5, 1, 1.5 and 2 kg on each side from small plates. Add a pair of 1 kg and two pairs of 0.5 kg, or four pairs of 0.5 kg.`);
 
   function openSettings() {
     const s = state.settings;
@@ -6157,8 +6198,13 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
       <div class="rest-row"><span>Body weight</span><div class="stepper"><button type="button" data-bw="-1" aria-label="Half a kilo less">−</button><input id="bwIn" inputmode="decimal" autocomplete="off" value="${PS.kg(s.bodyWeight)}" aria-label="Body weight in kilograms"><span class="unit">kg</span><button type="button" data-bw="1" aria-label="Half a kilo more">+</button></div></div>
       <div class="rest-row"><span>Age <span class="muted small">for swim levels</span></span><div class="stepper"><button type="button" data-ag="-1" aria-label="One year less">−</button><input id="agIn" inputmode="numeric" autocomplete="off" value="${s.age || ''}" placeholder="Add" aria-label="Age in years"><span class="unit">yrs</span><button type="button" data-ag="1" aria-label="One year more">+</button></div></div>
       <div class="field"><span class="lbl" id="ldL">Lift days</span><div class="chips days" role="group" aria-labelledby="ldL">${chips('ld', s.liftDays)}</div><p class="muted small">Two days. Tap a day to move the nearer one there. The first in the week is Squat & Bench, the second Deadlift & Press.</p>
-        <div class="rest-row"><span>Light bench on Deadlift & Press day <span class="muted small">3 × 8 after press</span></span><button class="chip" type="button" data-lightb aria-pressed="${!!s.lightBench}">${s.lightBench ? 'On' : 'Off'}</button></div>
-        <div class="rest-row"><span>0.5 kg plates <span class="muted small">bench and press go up 1 kg</span></span><button class="chip" type="button" data-frac aria-pressed="${!!s.frac}">${s.frac ? 'On' : 'Off'}</button></div></div>
+        <div class="rest-row"><span>Light bench on Deadlift & Press day <span class="muted small">3 × 8 after press</span></span><button class="chip" type="button" data-lightb aria-pressed="${!!s.lightBench}">${s.lightBench ? 'On' : 'Off'}</button></div></div>
+      <div class="block">
+        <div class="field"><span class="lbl">Your plates</span><p class="muted small">Pairs of each size, one plate for each side. Warm-ups and working sets are loaded from these. They make up to <b id="plMax">${PS.kg(PS.maxLoad())} kg</b> on a 20 kg bar.</p></div>
+        ${PS.PLATES_STD.map((p) => `<div class="rest-row"><span>${PS.kg(p)} kg</span><div class="stepper sm pl"><button type="button" data-pl="${p}" data-d="-1" aria-label="One pair of ${PS.kg(p)} kg plates less">−</button><output id="pl-${String(p).replace('.', '_')}">${plTxt(s.plates[p])}</output><button type="button" data-pl="${p}" data-d="1" aria-label="One pair of ${PS.kg(p)} kg plates more">+</button></div></div>`).join('')}
+        <div class="rest-row"><span>1 kg steps <span class="muted small">bench and press</span></span><button class="chip" type="button" data-frac aria-pressed="${!!s.frac}">${s.frac ? 'On' : 'Off'}</button></div>
+        <p class="muted small" id="fracNote">${fracNote(s)}</p>
+      </div>
       <div class="field"><span class="lbl" id="mdL">Morning run + bag</span><div class="chips days" role="group" aria-labelledby="mdL">${chips('md', s.morningDays)}</div></div>
       <div class="field"><span class="lbl" id="swL">Swim day</span><div class="chips days" role="group" aria-labelledby="swL">${chips('sd', [s.swimDay])}</div>
         <div class="rest-row"><span>Learning front crawl</span><button class="chip" type="button" data-crawl aria-pressed="${!!s.crawl}">${s.crawl ? 'On' : 'Off'}</button></div></div>
@@ -6253,6 +6299,14 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
           } else if (b.hasAttribute('data-lightb')) {
             s.lightBench = !s.lightBench; save(); refresh();
             const nb = $('[data-lightb]', el); if (nb) nb.focus({ preventScroll: true });
+          } else if (b.dataset.pl) {
+            const p = b.dataset.pl;
+            s.plates[p] = Math.max(0, Math.min(6, (s.plates[p] || 0) + Number(b.dataset.d)));
+            PS.setPlates(s.plates);
+            save(); render();
+            $(`#pl-${p.replace('.', '_')}`, el).textContent = plTxt(s.plates[p]);
+            $('#plMax', el).textContent = `${PS.kg(PS.maxLoad())} kg`;
+            $('#fracNote', el).textContent = fracNote(s);
           } else if (b.hasAttribute('data-frac')) {
             s.frac = !s.frac; PS.setFrac(s.frac); save(); refresh();
             const nb = $('[data-frac]', el); if (nb) nb.focus({ preventScroll: true });

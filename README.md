@@ -37,7 +37,9 @@ It works offline after the first open.
 
 ## How the weights move
 
-A step is 5 kg for squat and deadlift, and 2.5 kg for bench and overhead press. With **0.5 kg plates** turned on in Settings, bench and overhead press go up 1 kg at a time instead (you'll need two pairs of 0.5 kg plates). Warm-ups stay on the usual weights, and only the work sets use the small plates.
+A step is 5 kg for squat and deadlift, and 2.5 kg for bench and overhead press. With **1 kg steps** turned on in Settings, bench and overhead press go up 1 kg at a time instead. That needs small plates that make 0.5, 1, 1.5 and 2 kg a side: a pair of 1 kg and two pairs of 0.5 kg, or four pairs of 0.5 kg. Until **Your plates** has them, the steps stay at 2.5 kg. Warm-ups stay on the usual weights, and only the work sets use the small plates.
+
+**Your plates.** Settings lists the pairs of each plate size you own (20, 15, two of 10, two of 5, 2.5 and 1.25 to start, which make up to 157.5 kg). Every warm-up and working set is loaded from those, with the fewest plates and as few changes between sets as it can.
 
 - **Clean**: one step up next time. **Easy**: two steps, unless one of the two sessions before it was hard.
 - **Grind** or a missed rep: the same weight next time.
