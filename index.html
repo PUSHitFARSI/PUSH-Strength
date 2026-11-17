@@ -5154,11 +5154,23 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
     try { if (navigator.audioSession && navigator.audioSession.type !== 'ambient') navigator.audioSession.type = 'ambient'; } catch (e) { /* not supported */ }
   }
   mixWithMusic();
+  /* The app only holds audio while a workout or the bag timer is open with sound on, and lets go
+     as soon as the phone locks or you switch apps. Coming back makes a fresh audio context on the
+     next tap, set to mix with music again, instead of waking an old one that iOS interrupted
+     (waking that one can take the music over). With sound off it never touches audio at all. */
+  function audioRelease() {
+    if (!actx) return;
+    try { actx.close(); } catch (e) { /* ignore */ }
+    actx = null;
+  }
   function audioUnlock() {
+    if (!state.settings.sound) { audioRelease(); return; }
+    if (!woEl && !bagEl) return;
     mixWithMusic();
     try {
       const AC = window.AudioContext || window.webkitAudioContext;
       if (!AC) return;
+      if (actx && (actx.state === 'closed' || actx.state === 'interrupted')) audioRelease();
       if (!actx) {
         actx = new AC();
         const b = actx.createBuffer(1, 1, 22050);
@@ -5172,6 +5184,7 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
   }
   function beep(freq, dur, vol) {
     if (!state.settings.sound || !actx) return;
+    mixWithMusic();
     try {
       const o = actx.createOscillator(), g = actx.createGain();
       const t0 = actx.currentTime;
@@ -5241,6 +5254,7 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
     woTimer = null;
     releaseAwake();
     if (woEl) { woEl.remove(); woEl = null; }
+    if (!bagEl) audioRelease();
     woMin = false;
     removeMini();
     unlockScroll('workout');
@@ -5504,6 +5518,7 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
     bagTick = null;
     releaseAwake();
     if (bagEl) { bagEl.remove(); bagEl = null; }
+    if (!woEl) audioRelease();
     bag = null;
     unlockScroll('bag');
     setInert(false);
@@ -5587,7 +5602,7 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
     if (a === 'close') { closeBag(); return; }
     if (a === 'lock') { openLock('bag'); return; }
     if (a === 'log') { closeBag(); HANDLERS.mornings.done(); return; }
-    if (a === 'sound') { state.settings.sound = !state.settings.sound; save(); audioUnlock(); renderBag(); return; }
+    if (a === 'sound') { state.settings.sound = !state.settings.sound; save(); audioUnlock(); if (state.settings.sound) beep(880, 0.12, 0.25); renderBag(); return; }
     if (a === 'go' || a === 'again') {
       if (bag.done || a === 'again') { bag.left = bag.total; bag.done = false; }
       if (bag.endAt) {
@@ -5934,7 +5949,8 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
       case 'sound':
         state.settings.sound = !state.settings.sound;
         save();
-        if (state.settings.sound) { audioUnlock(); beep(880, 0.12, 0.25); }
+        audioUnlock();
+        if (state.settings.sound) beep(880, 0.12, 0.25);
         renderWorkout();
         return;
       case 'min': minimizeWorkout(); return;
@@ -6591,7 +6607,8 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
   $$('.tab').forEach((b) => b.addEventListener('click', () => setTab(b.dataset.tab)));
   $('#settingsBtn').addEventListener('click', openSettings);
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState !== 'visible') return;
+    if (document.visibilityState !== 'visible') { audioRelease(); return; }
+    mixWithMusic();
     if (woEl) { keepAwake(); audioUnlock(); woTick(); if (!woMin) return; }
     if (bagEl) { if (bag && bag.endAt) { keepAwake(); audioUnlock(); bagStep(); } return; }
     if (T() !== renderedDay && !sheet && !viewer) render();
