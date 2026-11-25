@@ -41,7 +41,7 @@ A step is 5 kg for squat and deadlift, and 2.5 kg for bench and overhead press. 
 
 **Your plates.** Settings lists the pairs of each plate size you own (20, 15, two of 10, two of 5, 2.5 and 1.25 to start, which make up to 157.5 kg). Every warm-up and working set is loaded from those, with the fewest plates and as few changes between sets as it can.
 
-- **Clean**: one step up next time. **Easy**: two steps, unless one of the two sessions before it was hard.
+- **Clean**: one step up next time. **Easy**: two steps, unless one of the two sessions before it was hard, or two steps would be more than 8% heavier (a 90 kg deadlift goes up 5 kg, not 10).
 - **Grind** or a missed rep: the same weight next time.
 - The app never goes past a weight you struggled with (missed reps or a grind) until you've done it cleanly. Going up stops at that weight, so you retry it first.
 - If a jump of more than one step ends in missed reps or a grind, the next session goes back to one step above where you jumped from.

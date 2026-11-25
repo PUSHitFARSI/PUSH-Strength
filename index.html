@@ -1407,6 +1407,7 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
        with missed reps in one of them: 10% lighter, then back up a step at a time. Grinds alone
        just repeat, since every rep was done.
      - Well short (under 80% of the reps): back to the last clean weight.
+     - An easy day goes up two steps only if that's no more than 8% heavier, else one step.
      - Two weeks or more off: 10% lighter.
      - A low-energy day (marked at the end of the workout, e.off) counts only if the lift went
        well. Missed reps, a grind or stopping early that day are left out, so the plan carries on
@@ -1465,9 +1466,11 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
       tag = 'Repeat'; why = 'Last time was a grind'; move = 'repeat';
     } else {
       const hardLately = recent.slice(Math.max(0, n - 3), n - 1).some((r) => HARD.includes(r.v));
-      const steps = v === 'easy' && !hardLately ? 2 : 1;
+      // an easy day earns two steps, unless that would be more than 8% heavier (90 kg deadlift: +5, not +10)
+      const small = 2 * inc <= it.w * 0.08 + eps;
+      const steps = v === 'easy' && !hardLately && small ? 2 : 1;
       w = it.w + steps * inc;
-      why = v === 'easy' ? (steps === 2 ? 'Last time felt easy' : 'Felt easy, but one step at a time after a hard session') : 'Last time was clean';
+      why = v === 'easy' ? (steps === 2 ? 'Last time felt easy' : hardLately ? 'Felt easy, but one step at a time after a hard session' : 'Felt easy, but two steps would be too big a jump') : 'Last time was clean';
       move = 'up';
       const cap = lowestWall(walls);
       if (cap && w > cap.w + eps) {
