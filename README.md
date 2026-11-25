@@ -49,9 +49,11 @@ A step is 5 kg for squat and deadlift, and 2.5 kg for bench and overhead press. 
 - Well short of the reps (under 80%): back to your last clean weight.
 - Two weeks or more off: 10% lighter.
 
+**Flexible weeks.** Each week (Monday to Sunday) has two slots: Squat & Bench on your first lift day and Deadlift & Press on the second. A session counts for its own slot whatever day you do it, so Thursday's session on Wednesday is early, not late, and Thursday is free. The card offers **Do … today instead** whenever the other session is still open this week. A missed session is due straight away while the other one's day is still ahead; once the other one is done (or its day comes), the missed one becomes a **make-up** on Saturday (change it under Settings → Make-up day), with at least one rest day before it. Nothing carries into the next week.
+
 **Low-energy day.** Under-fuelled, short on sleep, off day? Turn on **Low-energy day** on the finish screen (or in the log sheet, also for past sessions). Missed reps, a grind or stopping early that day don't count, so next time picks up from the session before. A lift that went well still counts and moves you up as usual. Pull-ups count only if they weren't worse than the time before.
 
-**Light bench.** Deadlift & Press day ends with a light bench after overhead press: one set with the empty bar, then 3 × 8, for a second dose of bench practice each week. It starts at 80% of your bench. Stop each set with about 2 reps left. It goes up a step when all 24 reps felt easy, or after two clean sessions at that weight, and never goes above 85% of your bench. It's logged separately, so it never changes Monday's weights. Turn it off in Settings.
+**Light bench.** Deadlift & Press day ends with a light bench after overhead press: one set with the empty bar, then 3 × 8, for a second dose of bench practice each week. It starts at 80% of your bench. Stop each set with about 2 reps left. It goes up a step when all 24 reps felt easy, or after two clean sessions at that weight, and never goes above 85% of your bench. It's logged separately, so it never changes Monday's weights. Turn it off in Settings. It's optional: tap **Skip light bench** when you get to it in the workout and it's left out of that session.
 
 ## Your data
 

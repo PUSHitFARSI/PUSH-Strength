@@ -550,6 +550,10 @@ body.has-mini .toast:not(.top) { bottom: calc(var(--tab-h) + env(safe-area-inset
 }
 
 /* ---------- start workout (inside the white card) ---------- */
+.card-swap {
+  display: block; margin: 12px auto 0; padding: 6px 4px; font-size: 14px; font-weight: 700; color: var(--paper-ink);
+  text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px;
+}
 .start-btn {
   margin-top: 14px; width: 100%; height: 56px; border-radius: 14px;
   background: var(--paper-ink); color: var(--paper);
@@ -1596,8 +1600,65 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
     return i <= 0 ? 'A' : 'B';
   }
 
-  /* Which lifting session is next and when. */
+  /* Which lifting session is next and when.
+     Each week (Monday to Sunday) has two slots: Squat & Bench on the first lift day, Deadlift &
+     Press on the second. A session counts for its own slot whatever day you do it, so doing
+     Thursday's session on Wednesday is early, not late, and Thursday is then free.
+     - A missed slot is due straight away (late) while the other slot's day is still ahead.
+     - Once the other session is done, or its day has come, a missed one becomes a make-up on
+       the make-up day (Saturday unless changed), if that still fits in the week.
+     - At least one rest day between sessions, and not on basketball day unless it's a lift day.
+     - A skip moves that slot to the next day. A new week starts fresh: nothing carries over.
+     - You can pick the other open session for today ("Do … instead"): state.liftSwap. */
+  const weekMon = (d) => addDays(d, -monFirst(dow(d)));
   function nextLift(state, t) {
+    const s = state.settings;
+    const days = liftDaysSorted(s);
+    if (days.length !== 2) return nextLiftChain(state, t);
+    const ws = weekMon(t), we = addDays(ws, 6);
+    const slotOf = (w0, i) => addDays(w0, monFirst(days[i]));
+    const mk = s.makeupDay != null ? s.makeupDay : 6;
+    const lastDone = state.lifts.filter((e) => e.status === 'done').sort(byDate).pop();
+    const rested = (d) => (lastDone ? later(d, addDays(lastDone.date, 2)) : d);
+    const inWk = state.lifts.filter((e) => !e.bonus && e.date >= ws && e.date <= we);
+    const doneT = inWk.filter((e) => e.status === 'done').map((e) => e.type);
+    const open = ['A', 'B'].map((type, i) => {
+      if (doneT.includes(type)) return null;
+      const sk = inWk.filter((e) => e.status === 'skipped' && e.type === type).map((e) => e.date).sort().pop();
+      return { type, slot: slotOf(ws, i), after: sk ? addDays(sk, 1) : null };
+    }).filter(Boolean);
+    const plan = open.map((o) => {
+      let due, kind;
+      if (o.slot >= t) { due = o.slot; kind = 'slot'; }
+      else if (open.some((x) => x !== o && x.slot > t)) { due = o.slot; kind = 'late'; }
+      else { due = later(addDays(ws, monFirst(mk)), t); kind = 'makeup'; }
+      if (o.after) due = later(due, o.after);
+      due = rested(due);
+      if (due !== o.slot && dow(due) === s.ballDay && !isLiftDay(s, due)) due = addDays(due, 1);
+      if (kind === 'late' && due > o.slot && due > t) kind = 'makeup';
+      return Object.assign({}, o, { due, kind });
+    }).filter((o) => o.due <= we);
+    const typesOpen = plan.map((o) => o.type);
+    // your pick for today
+    const sw = state.liftSwap;
+    if (sw && sw.date === t && typesOpen.includes(sw.type)) {
+      const o = plan.find((x) => x.type === sw.type);
+      return { type: o.type, due: t, moved: o.slot !== t ? o.slot : null, back: false, swapped: true, early: o.slot > t,
+        alts: typesOpen.filter((x) => x !== o.type) };
+    }
+    if (plan.length) {
+      plan.sort((a, b) => (a.due < b.due ? -1 : a.due > b.due ? 1 : a.type < b.type ? -1 : 1));
+      const o = plan[0];
+      return { type: o.type, due: o.due, moved: o.kind === 'slot' ? (o.due !== o.slot ? o.slot : null) : o.kind === 'late' ? (o.due !== o.slot ? o.slot : null) : null,
+        makeup: o.kind === 'makeup' ? o.slot : null, back: false, alts: typesOpen.filter((x) => x !== o.type) };
+    }
+    // this week is done: next week's first session
+    let due = rested(slotOf(addDays(ws, 7), 0));
+    if (due !== slotOf(addDays(ws, 7), 0) && dow(due) === s.ballDay && !isLiftDay(s, due)) due = addDays(due, 1);
+    return { type: 'A', due, moved: due !== slotOf(addDays(ws, 7), 0) ? slotOf(addDays(ws, 7), 0) : null, back: false, alts: [] };
+  }
+  /* The older rule, for anything other than two lift days a week: alternate A and B. */
+  function nextLiftChain(state, t) {
     const s = state.settings;
     const ents = state.lifts.slice().sort(byDate);
     const last = ents[ents.length - 1];
@@ -1642,7 +1703,10 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
   function liftNotes(state, nl) {
     const s = state.settings;
     const notes = [];
-    if (nl.moved) notes.push(`Moved from ${DAY_LONG[dow(nl.moved)]}.`);
+    if (nl.swapped) notes.push(nl.early ? `${DAY_LONG[dow(nl.moved)]}'s session, done early.` : nl.moved ? `${DAY_LONG[dow(nl.moved)]}'s session.` : '');
+    else if (nl.makeup) notes.push(`Make-up for ${DAY_LONG[dow(nl.makeup)]}'s session.`);
+    else if (nl.moved) notes.push(`Moved from ${DAY_LONG[dow(nl.moved)]}.`);
+    if (!notes[0]) notes.shift();
     const lastDone = state.lifts.filter((e) => e.status === 'done').sort(byDate).pop();
     if (lastDone && diff(lastDone.date, nl.due) === 1) notes.push('You lifted yesterday, so keep every rep smooth.');
     if (dow(nl.due) === s.swimDay) notes.push('Swim day too. Skip the swim if your legs need it.');
@@ -2116,12 +2180,31 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
         else if (plan) st = d > t ? 'planned' : d === t ? 'today' : 'missed';
         days.push({ d, st, plan });
       }
+      if (kind === 'lift' && liftDaysSorted(state.settings).length === 2) liftWeekDays(state, days, ents, ws, t);
       const done = ents.filter((e) => e.status === 'done').length;
       const bonus = all.filter((e) => e.status === 'done' && e.bonus).length;
       out.kinds[kind] = { tracked, planned, done, bonus, skipped: ents.filter((e) => e.status === 'skipped').length, days };
       if (tracked) { out.done += Math.min(done, planned); out.planned += planned; }
     });
     return out;
+  }
+  /* Lift days in a week, by slot: a session done on another day fills its slot, so that slot's
+     day isn't planned or missed any more (and the day it was done on isn't "moved"). This week's
+     make-up shows on its day. */
+  function liftWeekDays(state, days, ents, ws, t) {
+    const doneT = ents.filter((e) => e.status === 'done').map((e) => e.type);
+    let mk = null, from = null;
+    if (ws <= t && t <= addDays(ws, 6)) {
+      const nl = nextLift(state, t);
+      if (nl.due >= t && nl.due <= addDays(ws, 6) && !isLiftDay(state.settings, nl.due)) { mk = nl.due; from = nl.makeup || nl.moved; }
+    }
+    days.forEach((x) => {
+      if (x.st === 'done') { x.plan = true; return; }
+      // a missed day that has a make-up coming isn't listed as missed
+      if (x.d === from && x.st === 'missed') { x.st = ''; return; }
+      if (x.plan && x.st !== 'skipped' && doneT.includes(slotType(state.settings, x.d))) { x.st = ''; x.plan = false; x.filled = true; }
+      if (x.d === mk && !x.st) x.st = x.d > t ? 'planned' : 'today';
+    });
   }
   /* This week first, then the weeks before it. */
   function weekList(state, t, n) {
@@ -2627,6 +2710,7 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
     if (!(s.settings.bagMins >= 1 && s.settings.bagMins <= 30)) s.settings.bagMins = 5;
     if (typeof s.settings.lightBench !== 'boolean') s.settings.lightBench = true;
     if (typeof s.settings.frac !== 'boolean') s.settings.frac = false;
+    if (!(Number.isInteger(s.settings.makeupDay) && s.settings.makeupDay >= 0 && s.settings.makeupDay <= 6)) s.settings.makeupDay = 6;
     const own = s.settings.plates && typeof s.settings.plates === 'object' ? s.settings.plates : {};
     s.settings.plates = {};
     PS.PLATES_STD.forEach((p) => {
@@ -3160,6 +3244,12 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
       if (p.sets < PS.LIFTS[p.key].sets) why.push(`${name}: one heavy set of 5 from now on.`);
     });
     notes.unshift(...why);
+    if (nl.swapped) {
+      // what happens to the other session if you do this one today
+      const hypo = Object.assign({}, state, { liftSwap: null, lifts: state.lifts.concat([{ id: 'hypo', date: t, type: nl.type, status: 'done', lifts: {} }]) });
+      const after = PS.nextLift(hypo, t);
+      if (after.type !== nl.type) notes.push(`After this, ${PS.SESSIONS[after.type].name} is ${after.makeup ? 'a make-up on ' : 'on '}${PS.DAY_LONG[PS.dow(after.due)]}.`);
+    }
     if (bon) {
       const hypo = Object.assign({}, state, { lifts: state.lifts.concat([{ id: 'hypo', date: t, type: nl.type, status: 'done', lifts: {} }]) });
       const after = PS.nextLift(hypo, t);
@@ -3209,7 +3299,7 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
       lightRow = `<div class="row">
           <span class="name">Light bench <span class="pill" title="${esc(lp.why)}">${esc(lp.tag)}</span></span>
           <span class="val">${PS.kg(lp.w)}<small>kg</small></span>
-          <span class="meta"><b>${lp.sets} × ${lp.reps}</b><span>After overhead press. Stop each set with 2 reps left</span></span>
+          <span class="meta"><b>${lp.sets} × ${lp.reps}</b><span>Optional, after overhead press. Stop each set with 2 reps left</span></span>
           <span class="meta">${esc(lp.why)}</span>
         </div>`;
     }
@@ -3221,11 +3311,14 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
       </div>`;
     const startLabel = wo ? `Resume workout · ${fmtDur(Date.now() - wo.started)}` : nl.bonus ? 'Start bonus workout' : 'Start workout';
     return `<article class="card${animateCard ? ' enter' : ''}" tabindex="0" aria-label="${nl.bonus ? 'Bonus session, ' : ''}${esc(sess.name)}, ${esc(w.text)}. Swipe right or press the right arrow if you did it, left ${nl.bonus ? 'to cancel the bonus' : 'to skip'}.">
-        <div class="card-top"><span class="when">${esc(w.text)}</span>${nl.bonus ? '<span class="pill solid">Bonus</span>' : w.late ? '<span class="pill solid">Make-up</span>' : ''}</div>
+        <div class="card-top"><span class="when">${esc(w.text)}</span>${nl.bonus ? '<span class="pill solid">Bonus</span>' : nl.swapped && nl.early ? '<span class="pill solid">Early</span>' : w.late || nl.makeup ? '<span class="pill solid">Make-up</span>' : ''}</div>
         <h3>${sess.name}</h3>
         <div class="rows">${rows}${lightRow}${pullRow}</div>
         ${notes.length ? `<ul class="notes">${notes.map((n) => `<li>${esc(n)}</li>`).join('')}</ul>` : ''}
         <button class="start-btn" type="button" data-act="start">${ICON.play}<span>${startLabel}</span></button>
+        ${wo || nl.bonus ? '' : nl.swapped
+          ? '<button class="card-swap" type="button" data-act="unswap">Back to the planned session</button>'
+          : nl.alts && nl.alts.length ? `<button class="card-swap" type="button" data-act="swap" data-type="${nl.alts[0]}">Do ${esc(PS.SESSIONS[nl.alts[0]].name)} today instead</button>` : ''}
       </article>`;
   }
 
@@ -4936,6 +5029,7 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
     const t = T();
     const nl = PS.nextLift(state, t);
     const e = { id: uid(), date: nl.due > t ? nl.due : t, type: nl.type, status: 'skipped' };
+    delete state.liftSwap;
     state.lifts.push(e);
     save();
     animateCard = true;
@@ -5013,6 +5107,14 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
     } else if (act === 'tip-no') {
       state.settings.tipOff = T();
       save(); render();
+    } else if (act === 'swap') {
+      state.liftSwap = { date: T(), type: b.dataset.type };
+      save(); animateCard = true; render();
+      announce(`${PS.SESSIONS[b.dataset.type].name} today.`);
+    } else if (act === 'unswap') {
+      delete state.liftSwap;
+      save(); animateCard = true; render();
+      announce('Back to the planned session.');
     }
   });
 
@@ -5742,7 +5844,8 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
         <div class="stepper"><button type="button" data-wo="r-" aria-label="One rep fewer">−</button><output class="wo-pend" aria-live="polite">${pending}</output><button type="button" data-wo="r+" aria-label="One rep more">+</button></div></div>` : '';
     const links = [];
     if (i > 0) links.push('<button class="link" type="button" data-wo="prev">← Previous set</button>');
-    if (st.kind === 'warm') links.push('<button class="link" type="button" data-wo="skipwarm">Skip warm-ups</button>');
+    if (st.kind === 'warm' && st.k !== 'benchL') links.push('<button class="link" type="button" data-wo="skipwarm">Skip warm-ups</button>');
+    if (st.k === 'benchL') links.push('<button class="link" type="button" data-wo="skiplight">Skip light bench</button>');
     return `<div class="wo-set">
         <div class="wo-info">
           <p class="wo-lbl">${lbl}</p>
@@ -5783,7 +5886,7 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
           <p class="wo-next">Next: <b>${esc(stepLine(nx))}</b>${nx.kind === 'warm' ? `<span class="wo-next-goal">Today's goal: <b>${PS.kg(wo.w[nx.k])} kg × ${wo.steps[workIdx(nx.k)[0]].reps}</b>, ${plural(workIdx(nx.k).length, 'set')}</span>` : ''}</p>
           ${load}${fix}${feel}
           <button class="wo-go" type="button" data-wo="skiprest">Start next set</button>
-          <div class="wo-links"><button class="link" type="button" data-wo="undo">Undo last set</button></div>
+          <div class="wo-links"><button class="link" type="button" data-wo="undo">Undo last set</button>${nx.k === 'benchL' ? '<button class="link" type="button" data-wo="skiplight">Skip light bench</button>' : ''}</div>
         </div>
       </div>`;
   }
@@ -5960,6 +6063,18 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
         const j = wo.steps.findIndex((s, i) => i > wo.i && s.k === st.k && s.kind === 'work');
         if (j > 0) { wo.i = j; wo.pending = null; wo.restOver = 0; }
         saveWorkout(); renderWorkout();
+        return;
+      }
+      case 'skiplight': {
+        // drop the light bench sets not done yet; sets already done stay in the log
+        const keep = wo.steps.filter((x, i) => i < wo.i || x.k !== 'benchL');
+        const doneAny = wo.steps.some((x, i) => i < wo.i && x.k === 'benchL' && x.kind === 'work');
+        wo.steps = keep;
+        if (!doneAny) delete wo.w.benchL;
+        wo.pending = null;
+        if (wo.i >= wo.steps.length) { wo.phase = 'done'; wo.ended = Date.now(); wo.restEnd = 0; }
+        saveWorkout(); renderWorkout();
+        announce(`Light bench skipped. ${wo.phase === 'done' ? 'Workout done.' : `Next: ${stepLine(wo.steps[wo.i])}`}`);
         return;
       }
       case 't-': case 't+': {
@@ -6499,7 +6614,8 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
       <div class="field you"><span class="lbl">You</span><p class="muted small">Used only to compare you with the strength, swim and running standards. Nothing is tracked over time.</p></div>
       <div class="rest-row"><span>Body weight</span><div class="stepper"><button type="button" data-bw="-1" aria-label="Half a kilo less">−</button><input id="bwIn" inputmode="decimal" autocomplete="off" value="${PS.kg(s.bodyWeight)}" aria-label="Body weight in kilograms"><span class="unit">kg</span><button type="button" data-bw="1" aria-label="Half a kilo more">+</button></div></div>
       <div class="rest-row"><span>Age <span class="muted small">for swim levels</span></span><div class="stepper"><button type="button" data-ag="-1" aria-label="One year less">−</button><input id="agIn" inputmode="numeric" autocomplete="off" value="${s.age || ''}" placeholder="Add" aria-label="Age in years"><span class="unit">yrs</span><button type="button" data-ag="1" aria-label="One year more">+</button></div></div>
-      <div class="field"><span class="lbl" id="ldL">Lift days</span><div class="chips days" role="group" aria-labelledby="ldL">${chips('ld', s.liftDays)}</div><p class="muted small">Two days. Tap a day to move the nearer one there. The first in the week is Squat & Bench, the second Deadlift & Press.</p>
+      <div class="field"><span class="lbl" id="ldL">Lift days</span><div class="chips days" role="group" aria-labelledby="ldL">${chips('ld', s.liftDays)}</div><p class="muted small">Two days. Tap a day to move the nearer one there. The first in the week is Squat & Bench, the second Deadlift & Press. Either can be done early or late in the week; it counts for its own day.</p>
+        <span class="lbl" id="mkL">Make-up day</span><div class="chips days" role="group" aria-labelledby="mkL">${chips('mk', [s.makeupDay != null ? s.makeupDay : 6])}</div><p class="muted small">A session you missed moves here once the other one is done.</p>
         <div class="rest-row"><span>Light bench on Deadlift & Press day <span class="muted small">3 × 8 after press</span></span><button class="chip" type="button" data-lightb aria-pressed="${!!s.lightBench}">${s.lightBench ? 'On' : 'Off'}</button></div></div>
       <div class="block">
         <div class="field"><span class="lbl">Your plates</span><p class="muted small">Pairs of each size, one plate for each side. Warm-ups and working sets are loaded from these. They make up to <b id="plMax">${PS.kg(PS.maxLoad())} kg</b> on a 20 kg bar.</p></div>
@@ -6570,6 +6686,10 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
               save(); refresh();
               const nb = $(`[data-ld="${d}"]`, el); if (nb) nb.focus({ preventScroll: true });
             }
+          } else if (b.dataset.mk != null) {
+            s.makeupDay = +b.dataset.mk;
+            save(); refresh();
+            const nb = $(`[data-mk="${b.dataset.mk}"]`, el); if (nb) nb.focus({ preventScroll: true });
           } else if (b.dataset.bw != null) {
             const cur = num($('#bwIn', el).value);
             s.bodyWeight = Math.max(30, Math.min(200, PS.roundTo((isFinite(cur) ? cur : s.bodyWeight) + Number(b.dataset.bw) * 0.5, 0.5)));
