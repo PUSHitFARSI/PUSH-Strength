@@ -49,6 +49,8 @@ A step is 5 kg for squat and deadlift, and 2.5 kg for bench and overhead press. 
 - Well short of the reps (under 80%): back to your last clean weight.
 - Two weeks or more off: 10% lighter.
 
+**Low-energy day.** Under-fuelled, short on sleep, off day? Turn on **Low-energy day** on the finish screen (or in the log sheet, also for past sessions). Missed reps, a grind or stopping early that day don't count, so next time picks up from the session before. A lift that went well still counts and moves you up as usual. Pull-ups count only if they weren't worse than the time before.
+
 **Light bench.** Deadlift & Press day ends with a light bench after overhead press: one set with the empty bar, then 3 × 8, for a second dose of bench practice each week. It starts at 80% of your bench. Stop each set with about 2 reps left. It goes up a step when all 24 reps felt easy, or after two clean sessions at that weight, and never goes above 85% of your bench. It's logged separately, so it never changes Monday's weights. Turn it off in Settings.
 
 ## Your data

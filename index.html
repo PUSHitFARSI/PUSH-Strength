@@ -1060,6 +1060,11 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
 .fin-vol { font-size: 14px; color: var(--ink-2); }
 .fin-vol b { color: var(--ink); }
 .wo-msg { font-size: 14px; font-weight: 700; color: var(--ink); }
+.off-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; width: 100%; text-align: left; padding: 2px 0; }
+.off-t { display: grid; gap: 2px; min-width: 0; font-size: 15px; }
+.off-sub { font-size: 13px; color: var(--ink-3); line-height: 1.35; }
+.off-row .chip { flex: none; }
+.block + .off-row, .off-row + .field { margin-top: 4px; }
 .wo-dlg {
   position: fixed; inset: 0; z-index: 2; display: flex; align-items: flex-end; justify-content: center;
   background: var(--scrim);
@@ -1398,16 +1403,25 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
        with missed reps in one of them: 10% lighter, then back up a step at a time. Grinds alone
        just repeat, since every rep was done.
      - Well short (under 80% of the reps): back to the last clean weight.
-     - Two weeks or more off: 10% lighter. */
+     - Two weeks or more off: 10% lighter.
+     - A low-energy day (marked at the end of the workout, e.off) counts only if the lift went
+       well. Missed reps, a grind or stopping early that day are left out, so the plan carries on
+       from the session before it. */
   const HARD = ['miss', 'drop', 'grind'];
   const OK_V = ['clean', 'easy'];
   function liftPlan(state, key, onDate, extra) {
     const L = LIFTS[key];
     const inc = stepOf(state, key);
-    let hist = liftHistory(state, key);
-    if (extra) hist = hist.concat([extra]).sort(byDate);
+    let all = liftHistory(state, key);
+    if (extra) all = all.concat([extra]).sort(byDate);
+    const counts = (e) => !(e.off && !OK_V.includes(verdict(key, e.lifts[key])));
+    const hist = all.filter(counts);
+    const newest = all[all.length - 1];
+    const skipped = newest && !counts(newest) ? newest : null;
     if (!hist.length) {
-      return { key, w: START[key], sets: L.sets, reps: L.reps, tag: 'Start', why: 'Starting weight', verdict: null, move: 'start', eased: false };
+      const p = { key, w: START[key], sets: L.sets, reps: L.reps, tag: 'Start', why: 'Starting weight', verdict: null, move: 'start', eased: false };
+      if (skipped) Object.assign(p, { why: `${dayDate(skipped.date)} was a low-energy day, so it doesn't count. Starting weight`, lastDate: skipped.date });
+      return p;
     }
     const lastE = hist[hist.length - 1];
     const it = lastE.lifts[key];
@@ -1473,13 +1487,19 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
       }
     }
 
+    if (skipped) {
+      // compare with what you actually lifted that day, and say why it didn't count
+      const sw = skipped.lifts[key].w;
+      tag = w > sw + eps ? `+${kg(w - sw)}` : w < sw - eps ? `−${kg(sw - w)}` : 'Repeat';
+      why = `${dayDate(skipped.date)} was a low-energy day, so it doesn't count. ${why}`;
+    }
     let eased = false;
-    const gap = onDate ? diff(lastE.date, onDate) : 0;
+    const gap = onDate ? diff(newest.date, onDate) : 0;
     if (gap >= 14) {
       w = Math.max(BAR, roundTo(w * 0.9, 2.5));
       eased = true; tag = '−10%'; why = `Eased after ${weeksLabel(gap)} off`;
     }
-    return { key, w, sets, reps: L.reps, tag, why, verdict: v, move, eased, last: it, lastDate: lastE.date };
+    return { key, w, sets, reps: L.reps, tag, why, verdict: v, move, eased, last: it, lastDate: newest.date, skipped: !!skipped };
   }
 
   function pullHistory(state) {
@@ -1487,9 +1507,20 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
   }
 
   function pullPlan(state) {
-    const hist = pullHistory(state);
+    // a low-energy day counts only if it wasn't worse than the session before (as body-weight reps)
+    const bw = state.settings.bodyWeight, all = pullHistory(state), hist = [];
+    all.forEach((e) => {
+      const prev = hist[hist.length - 1];
+      if (e.off && prev && pullEq(bw, e.pull.reps[0], e.pull.add || 0) < pullEq(bw, prev.pull.reps[0], prev.pull.add || 0) - 1e-9) return;
+      hist.push(e);
+    });
     if (!hist.length) return { reps: [5, 5, 5], add: 0, why: 'Max quality reps' };
-    const last = hist[hist.length - 1].pull;
+    const r = pullPlanFrom(hist[hist.length - 1].pull);
+    const newest = all[all.length - 1];
+    if (newest !== hist[hist.length - 1]) { r.seen = newest.pull; r.why = `${dayDate(newest.date)} was a low-energy day, so it doesn't count. ${r.why}`; }
+    return r;
+  }
+  function pullPlanFrom(last) {
     /* Up to 10 reps on the first set, then 2.5 kg more on a belt or vest.
        With weight on, below 5 on the first set means 2.5 kg less. */
     const add = last.add || 0;
@@ -1513,6 +1544,11 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
   function lightPlan(state, extra) {
     let hist = lightHistory(state);
     if (extra) hist = hist.concat([extra]).sort(byDate);
+    // a low-energy day counts only if all 24 reps were done without a grind
+    const lightOK = (it) => it.reps.length >= LIGHT.sets && it.reps.every((r) => r >= LIGHT.reps) && it.effort !== 'grind';
+    const newestL = hist[hist.length - 1];
+    hist = hist.filter((e) => !e.off || lightOK(e.light));
+    const skippedL = newestL && hist[hist.length - 1] !== newestL ? newestL : null;
     const heavy = liftPlan(state, 'bench').w;
     const inc = stepOf(state, 'benchL');
     const fl = (x) => Math.max(BAR, Math.floor(x / inc + 1e-9) * inc);
@@ -1538,6 +1574,7 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
       move = w < it.w ? 'back' : 'repeat';
     }
     tag = w > it.w + 1e-9 ? `+${kg(w - it.w)}` : w < it.w - 1e-9 ? `−${kg(it.w - w)}` : 'Repeat';
+    if (skippedL) why = `${dayDate(skippedL.date)} was a low-energy day, so it doesn't count. ${why}`;
     return Object.assign(base, { w, tag, why, move, last: it, verdict: v });
   }
   const lightOn = (state, type) => type === 'B' && state.settings.lightBench !== false;
@@ -3179,7 +3216,7 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
     const pullRow = `<div class="row">
         <span class="name">Pull-ups</span>
         <span class="val word">${pull.add ? `+${PS.kg(pull.add)}<small>kg</small>` : 'Max reps'}</span>
-        <span class="meta"><b>3 sets</b>${pull.last ? `<span>Last ${pull.last.reps.join(' · ')}</span>` : ''}</span>
+        <span class="meta"><b>3 sets</b>${pull.seen || pull.last ? `<span>Last ${(pull.seen || pull.last).reps.join(' · ')}</span>` : ''}</span>
         <span class="meta">${esc(pull.why)}</span>
       </div>`;
     const startLabel = wo ? `Resume workout · ${fmtDur(Date.now() - wo.started)}` : nl.bonus ? 'Start bonus workout' : 'Start workout';
@@ -3282,6 +3319,7 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
       if (PS.verdict('benchL', e.light) !== 'clean' && e.light.reps.some((r) => r < PS.LIGHT.reps)) flags.push(`Light bench: ${PS.sum(e.light.reps)}/${e.light.reps.length * PS.LIGHT.reps} reps`);
     }
     if (e.pull && e.pull.reps && PS.sum(e.pull.reps) > 0) parts.push(`Pull-ups ${e.pull.reps.join('·')}`);
+    if (e.off) flags.unshift('Low-energy day');
     return { s: parts.join(' · '), flags };
   }
 
@@ -5750,6 +5788,8 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
       </div>`;
   }
 
+  /* "Low-energy day": a toggle on the finish screen and in the log sheet. */
+  const offRow = (attr, on) => `<div class="off-row"><span class="off-t"><b id="offLbl">Low-energy day</b><span class="off-sub" id="offSub">Missed reps or a grind won't hold back your next weights. A good lift still counts.</span></span><button class="chip" type="button" ${attr} aria-pressed="${!!on}" aria-labelledby="offLbl" aria-describedby="offSub">${on ? 'On' : 'Off'}</button></div>`;
   function finHTML() {
     const m = workoutModel();
     const lines = woLifts().map((k) => {
@@ -5769,6 +5809,7 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
         </div>
         <div class="wo-act">
           <ul class="fin-list">${lines.join('')}</ul>
+          ${offRow('data-wo="off"', wo.off)}
           ${woMsg ? `<p class="wo-msg" role="alert">${esc(woMsg)}</p>` : ''}
           <button class="wo-go" type="button" data-wo="save">Save session</button>
           <div class="wo-links"><button class="link" type="button" data-wo="review">Review details</button><button class="link${woDiscardArmed ? ' armed' : ''}" type="button" data-wo="discard">${woDiscardArmed ? 'Tap again to discard' : 'Discard'}</button></div>
@@ -5870,6 +5911,7 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
     }
     const e = { id: uid(), type: wo.type, status: 'done', date: m.date, lifts: m.lifts, pull: m.pull, note: '', dur: m.dur };
     if (m.light) e.light = m.light;
+    if (wo.off) e.off = true;
     if (wo.bonus) { e.bonus = true; bonus = null; }
     state.lifts.push(e);
     save();
@@ -5968,8 +6010,16 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
         toast('Workout discarded.');
         return;
       case 'save': saveWorkoutSession(); return;
+      case 'off': {
+        wo.off = !wo.off;
+        saveWorkout();
+        b.setAttribute('aria-pressed', String(wo.off));
+        b.textContent = wo.off ? 'On' : 'Off';
+        return;
+      }
       case 'review': {
         const m = workoutModel();
+        if (wo.off) m.off = true;
         const type = wo.type;
         const wasBonus = !!wo.bonus;
         closeWorkout();
@@ -6030,7 +6080,7 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
     const isNew = !entry;
     const isBon = entry ? !!entry.bonus : !!asBonus;
     const src = entry || prefill || null;
-    const model = { date: src && src.date ? src.date : t, note: entry ? entry.note || '' : '', lifts: {}, pull: null };
+    const model = { date: src && src.date ? src.date : t, note: entry ? entry.note || '' : '', lifts: {}, pull: null, off: !!(src && src.off) };
     sess.lifts.forEach((k) => {
       if (src && src.lifts && src.lifts[k]) model.lifts[k] = JSON.parse(JSON.stringify(src.lifts[k]));
       else {
@@ -6084,6 +6134,7 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
       ${prefill && prefill.dur ? `<p class="small muted">Workout time ${fmtDur(prefill.dur * 1000)}</p>` : ''}
       ${keys.map(liftBlock).join('')}
       ${pullBlock()}
+      ${offRow('data-off', model.off)}
       <div class="field"><label class="lbl" for="logNote">Note</label><input class="inp" id="logNote" maxlength="160" placeholder="Optional" value="${esc(model.note)}"></div>
       ${entry ? '<button class="btn danger" type="button" data-del>Delete this session</button>' : ''}`;
 
@@ -6103,7 +6154,7 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
         if (!box) return;
         const it = model.lifts[k];
         if (!(it.w > 0) || PS.sum(it.reps) === 0) { box.innerHTML = ''; return; }
-        const extra = k === 'benchL' ? { date: model.date, type, status: 'done', light: it } : { date: model.date, type, status: 'done', lifts: { [k]: it } };
+        const extra = k === 'benchL' ? { date: model.date, type, status: 'done', light: it, off: model.off } : { date: model.date, type, status: 'done', lifts: { [k]: it }, off: model.off };
         const p = k === 'benchL' ? PS.lightPlan(state, extra) : PS.liftPlan(state, k, null, extra);
         box.innerHTML = `<span>Next time</span><span><b>${PS.kg(p.w)} kg</b>${p.sets !== LDEF(k).sets ? ` · ${p.sets} set` : ''} · ${esc(p.tag.toLowerCase())}</span>`;
       });
@@ -6161,6 +6212,13 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
           $('#pull-add', el).value = PS.kg(model.pull.add);
           return;
         }
+        if (b.hasAttribute('data-off')) {
+          model.off = !model.off;
+          b.setAttribute('aria-pressed', String(model.off));
+          b.textContent = model.off ? 'On' : 'Off';
+          updatePreview(el);
+          return;
+        }
         if (b.hasAttribute('data-addw')) { showAdd = true; redrawPull(el); const i = $('#pull-add', el); if (i) i.focus(); return; }
         if (b.hasAttribute('data-del')) {
           if (!b.classList.contains('armed')) { b.classList.add('armed'); b.textContent = 'Tap again to delete'; return; }
@@ -6204,6 +6262,7 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + 36px + 70px); }
       if (light) e.light = light; else delete e.light;
       e.pull = pull;
       e.note = (model.note || '').trim();
+      if (model.off) e.off = true; else delete e.off;
       if (prefill && prefill.dur) e.dur = prefill.dur;
       delete e.src;
       if (isNew && isBon) { e.bonus = true; bonus = null; }
